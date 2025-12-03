@@ -37,6 +37,7 @@ next-env.d.ts
 
 # Prisma
 /prisma/generated
+/src/generated/prisma
 
 # Tests (Jest, Playwright)
 /jest-results
