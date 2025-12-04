@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
       prettier: eslintPluginPrettier,
     },
     rules: {
+      // Treat unused variables as an EsLint error
+      '@typescript-eslint/no-unused-vars': 'error',
       // Enforces that Prettier formatting issues are treated as an ESLint error
       'prettier/prettier': 'error',
     },
