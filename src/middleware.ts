@@ -2,7 +2,7 @@ import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
 // list of protected routes
-const PROTECTED_ROUTES = ['./dashboard'];
+const PROTECTED_ROUTES = ['/dashboard'];
 
 // Main middleware handler
 export default withAuth(
