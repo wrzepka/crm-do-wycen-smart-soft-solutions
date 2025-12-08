@@ -117,7 +117,7 @@ model users {
 // It is required because we are using CredentialsProvider.
 model Account {
   id                String  @id @default(cuid())
-  userId            String
+  userId            Int
   type              String
   provider          String
   providerAccountId String
@@ -139,7 +139,7 @@ model Account {
 model Session {
   id           String    @id @default(cuid())
   sessionToken String    @unique
-  userId       String
+  userId       Int
   expires      DateTime
   user         users     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
