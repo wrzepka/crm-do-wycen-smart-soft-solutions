@@ -1,0 +1,10 @@
+import { z } from 'zod';
+
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, { message: 'Adres e-mail jest wymagany.' })
+    .email({ message: 'Niepoprawny format adresu e-mail.' }),
+
+  password: z.string().min(6, { message: 'Hasło musi mieć co najmniej 6 znaków.' }),
+});
