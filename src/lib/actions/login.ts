@@ -1,32 +1,8 @@
+// src/lib/actions/login.ts
 'use server';
 
 import { loginSchema } from '../schemas/authSchema';
-
-/**
- * Success payload returned by the Server Action.
- * The client will use these validated values to call next-auth/react -> signIn("credentials", {...}).
- */
-export type LoginActionSuccess = {
-  ok: true;
-  email: string;
-  password: string;
-};
-
-/**
- * Error payload returned by the Server Action.
- * Includes a generic message and normalized Zod errors (field + form errors) for UI rendering.
- */
-export type LoginActionError = {
-  ok: false;
-  error: string;
-  fieldErrors?: Record<string, string[]>;
-  formErrors?: string[];
-};
-
-/**
- * Union type for the Server Action result.
- */
-export type LoginActionResult = LoginActionSuccess | LoginActionError;
+import type { LoginActionResult, LoginActionError, LoginActionSuccess } from '@/types/auth-types';
 
 /**
  * Server Action (v4):
@@ -49,19 +25,21 @@ export async function loginAction(formData: FormData): Promise<LoginActionResult
   if (!parsed.success) {
     // Zod's flatten() produces fieldErrors (per-field arrays) and formErrors (top-level).
     const { fieldErrors, formErrors } = parsed.error.flatten();
-    return {
+    const payload: LoginActionError = {
       ok: false,
       error: 'Invalid login data',
       fieldErrors,
       formErrors,
     };
+    return payload;
   }
 
   // On success, return validated values to the client.
   // The client will call signIn("credentials", { email, password, redirect: false }) and handle UI/redirects.
-  return {
+  const payload: LoginActionSuccess = {
     ok: true,
     email: parsed.data.email,
     password: parsed.data.password,
   };
+  return payload;
 }
