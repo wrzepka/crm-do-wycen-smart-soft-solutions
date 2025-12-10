@@ -1,4 +1,3 @@
-// src/lib/actions/login.ts
 'use server';
 
 import { loginSchema } from '../schemas/authSchema';

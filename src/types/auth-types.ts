@@ -1,5 +1,3 @@
-// src/types/auth-types.ts
-
 /**
  * Generic per-field error map returned by Zod's `flatten().fieldErrors`.
  * Keys are field names, values are arrays of messages for that field.
