@@ -6,20 +6,17 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Lock, Mail, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
-import { loginSchema } from '@/lib/schemas/authSchema';
+import { loginAction } from '@/lib/actions/login';
+import { FormErrors } from '@/types/auth-types';
 import styles from './login.module.css';
-
-// Typ dla błędów formularza (klucz to nazwa pola, wartość to tablica komunikatów)
-type FieldErrors = {
-  email?: string[];
-  password?: string[];
-};
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  //for example conection error
   const [globalError, setGlobalError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({}); // Stan dla błędów pól
+  //bad email etc.
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,28 +25,33 @@ export default function LoginPage() {
     setFieldErrors({});
 
     const formData = new FormData(event.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
 
-    // 1. Walidacja Zod
-    const validation = loginSchema.safeParse({ email, password });
+    //server action validation check
+    const result = await loginAction(formData);
 
-    if (!validation.success) {
-      // Zamiast brać pierwszy błąd, mapujemy błędy do konkretnych pól
-      setFieldErrors(validation.error.flatten().fieldErrors);
+    if (!result.ok) {
+      if (result.fieldErrors) {
+        setFieldErrors(result.fieldErrors);
+      }
+      if (result.formErrors && result.formErrors.length > 0) {
+        setGlobalError(result.formErrors[0]);
+      } else if (result.error) {
+        setGlobalError(result.error);
+      }
+
       setIsLoading(false);
       return;
     }
 
-    // 2. Próba logowania
+    //next auth logging
     try {
-      const result = await signIn('credentials', {
+      const authResult = await signIn('credentials', {
         redirect: false,
-        email,
-        password,
+        email: result.email,
+        password: result.password,
       });
 
-      if (result?.error) {
+      if (authResult?.error) {
         setGlobalError('Nieprawidłowy e-mail lub hasło.');
         setIsLoading(false);
       } else {
@@ -57,14 +59,13 @@ export default function LoginPage() {
         router.refresh();
       }
     } catch (error) {
-      // POPRAWKA: Używamy zmiennej error (logujemy ją), żeby ESLint nie zgłaszał błędu "unused var"
       console.error('Błąd logowania:', error);
-      setGlobalError('Wystąpił błąd połączenia. Spróbuj ponownie.');
       setIsLoading(false);
     }
   }
 
   return (
+    //ux
     <div className={styles.container}>
       <div className={styles.card}>
         <div className={styles.header}>
@@ -79,13 +80,11 @@ export default function LoginPage() {
             />
           </div>
           <div className={styles.title}>Witaj w portalu</div>
-          <h1 className={styles.companyName}>Bielowicka twierdza 3000</h1>
+          <h1 className={styles.companyName}>Bieloidziska twierdza 3000</h1>
           <p className={styles.description}>Zaloguj się, aby zarządzać projektami.</p>
         </div>
 
-        {/* Dodajemy noValidate, aby wyłączyć systemowe dymki */}
         <form onSubmit={handleSubmit} noValidate>
-          {/* Błąd ogólny (np. złe hasło, brak połączenia) */}
           {globalError && (
             <div className="mb-6 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
               <AlertCircle size={16} />
@@ -93,7 +92,6 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Email */}
           <div className={styles.formGroup}>
             <div className={styles.labelRow}>
               <label htmlFor="email" className={styles.label}>
@@ -105,25 +103,20 @@ export default function LoginPage() {
               <Mail
                 className={styles.icon}
                 size={18}
-                // Jeśli jest błąd, kolorujemy ikonę na czerwono
                 style={fieldErrors.email ? { color: 'var(--destructive)' } : {}}
               />
               <input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="imie.nazwisko@smart-soft.pl"
-                // Dodajemy klasę błędu warunkowo
+                placeholder="imie.nazwisko@smart.pl"
                 className={`${styles.input} ${fieldErrors.email ? styles.inputError : ''}`}
-                // Mimo noValidate, warto zostawić atrybuty dla dostępności
                 aria-invalid={!!fieldErrors.email}
               />
             </div>
-            {/* Wyświetlanie błędu pod polem */}
             {fieldErrors.email && <p className={styles.errorMessage}>{fieldErrors.email[0]}</p>}
           </div>
 
-          {/* Hasło */}
           <div className={styles.formGroup}>
             <div className={styles.labelRow}>
               <label htmlFor="password" className={styles.label}>
@@ -170,7 +163,7 @@ export default function LoginPage() {
         <div className={styles.footer}>
           Nie masz konta?{' '}
           <Link href="#" className={styles.link}>
-            To nie wiem czy to potrzebne chlopaki
+            Skontaktuj się z administratorem
           </Link>
         </div>
       </div>

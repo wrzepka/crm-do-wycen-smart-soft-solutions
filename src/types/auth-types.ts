@@ -29,3 +29,9 @@ export type LoginActionError = {
  * Union type for the Server Action result.
  */
 export type LoginActionResult = LoginActionSuccess | LoginActionError;
+
+//For form validation
+export type FormErrors = {
+  email?: string[];
+  password?: string[];
+};

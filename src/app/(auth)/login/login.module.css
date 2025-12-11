@@ -163,26 +163,16 @@
   border-top: 1px solid var(--border);
 }
 
-/* src/app/(auth)/login/login.module.css */
-
-/* ... (poprzednie style bez zmian) ... */
-
-/* --- STYLE DLA WALIDACJI --- */
-
-/* Input z błędem - czerwona ramka */
 .inputError {
   border-color: var(--destructive);
   background-color: oklch(from var(--destructive) l c h / 0.05);
-  /* Bardzo jasne czerwone tło */
 }
 
-/* Czerwony ring przy focusie na błędnym polu */
 .inputError:focus {
   border-color: var(--destructive);
   box-shadow: 0 0 0 3px oklch(from var(--destructive) l c h / 0.2);
 }
 
-/* Tekst błędu pod inputem */
 .errorMessage {
   display: flex;
   align-items: center;
@@ -195,7 +185,6 @@
   animation: slideDown 0.2s ease-out;
 }
 
-/* Delikatna animacja pojawiania się błędu */
 @keyframes slideDown {
   from {
     opacity: 0;

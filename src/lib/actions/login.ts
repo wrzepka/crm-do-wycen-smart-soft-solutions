@@ -26,7 +26,7 @@ export async function loginAction(formData: FormData): Promise<LoginActionResult
     const { fieldErrors, formErrors } = parsed.error.flatten();
     const payload: LoginActionError = {
       ok: false,
-      error: 'Invalid login data',
+      error: 'Błędne dane logowania',
       fieldErrors,
       formErrors,
     };
