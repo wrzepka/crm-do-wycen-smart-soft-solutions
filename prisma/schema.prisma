@@ -41,6 +41,14 @@ model employee_technology {
   @@index([technology_id], map: "employee_technology_tech_idx")
 }
 
+enum EmployeeStatus {
+  ACTIVE_AVAILABLE
+  ACTIVE_BOOKED
+  ON_LEAVE
+  TERMINATED
+  ONBOARDING
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model employees {
   id                  Int                   @id @default(autoincrement())
@@ -48,7 +56,7 @@ model employees {
   last_name           String                @db.VarChar(100)
   busy_from           DateTime?             @db.Date
   busy_to             DateTime?             @db.Date
-  status              String                @default("active") @db.VarChar(20)
+  status              EmployeeStatus        @default(ACTIVE_AVAILABLE)
   employee_technology employee_technology[]
   projects            projects[]
 }
