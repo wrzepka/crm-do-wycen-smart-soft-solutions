@@ -22,13 +22,10 @@ This section covers the database connection and backend logic.
 
 | Element | Technology | Status | Next Step |
 | :--- | :--- | :--- | :--- |
-| **Database** | PostgreSQL | ⏳ In Progress | Requires instance to be provisioned (hosted). |
-| **ORM** | Prisma | ⏳ Installed | **Awaiting functioning database.** Requires model definitions (`schema.prisma`) and migration. |
-| **Backend Logic** | Server Actions | ⬜ To Implement | Implementation of CRUD (Create, Read, Update, Delete) logic using Prisma and Zod. |
-| **Authentication** | NextAuth | ⬜ To Implement | Deployment of employee/manager login capabilities. |
-
-**Key Task:** Finalize the `DATABASE_URL` configuration in the `.env` file and execute the first migration.
-
+| **Database** | PostgreSQL | ✅ Deployed | Requires instance to be provisioned (hosted). |
+| **ORM** | Prisma | ✅ Deployed | - |
+| **Backend Logic** | Server Actions | ⬜ In Progress | Implementation of CRUD (Create, Read, Update, Delete) logic using Prisma and Zod. |
+| **Authentication** | NextAuth | ✅ Deployed | - |
 ---
 
 ## III. 🧪 Testing and Advanced Features (Future Extensions)
@@ -60,15 +57,18 @@ To run the project, follow these steps:
     npm install
     ```
 
-3.  **Configure Environment Variables:**
+3. **Configure Husky and lint-staged:**
+   * Replace the default command: `npm test` with `npx lint-staged` in `/.husky/pre-commit` folder to automate eslint check before commit.
+
+4.  **Configure Environment Variables:**
     * Copy the example file: `cp .env.example .env`
     * Fill in `.env` with your local credentials (e.g., for PostgreSQL).
 
-4.  **Database Setup (after migration):**
+5.  **Database Setup (after migration):**
     * Generate the Prisma Client: `npx prisma generate`
     * Run migrations (if migration files exist): `npx prisma migrate dev`
 
-5.  **Start the development server:**
+6.  **Start the development server:**
     ```bash
     npm run dev
     ```
