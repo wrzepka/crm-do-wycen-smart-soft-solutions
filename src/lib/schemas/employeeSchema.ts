@@ -1,12 +1,19 @@
+// src/lib/schemas/employeeSchema.ts
 import { z } from 'zod';
 
 export const EmployeeStatus = z.enum([
-  'ACTIVE_AVAILABLE', // Employee is active and available for new tasks/projects.
-  'ACTIVE_BOOKED', // Employee is active but fully booked with current projects.
-  'ON_LEAVE', // Employee is temporarily absent (vacation, sick leave, maternity).
-  'TERMINATED', // Employment has been terminated.
-  'ONBOARDING', // Employee is new and currently in the onboarding process (limited availability).
+  'ACTIVE_AVAILABLE',
+  'ACTIVE_BOOKED',
+  'ON_LEAVE',
+  'TERMINATED',
+  'ONBOARDING',
 ]);
+
+// Schema for technology selection in forms
+export const technologySelectionSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string(),
+});
 
 export const employeeBaseSchema = z.object({
   id: z.number().int().positive(),
@@ -20,22 +27,18 @@ export const employeeBaseSchema = z.object({
     .max(100, { message: 'Nazwisko nie może przekraczać 100 znaków' }),
   busy_from: z.date().nullable().optional(),
   busy_to: z.date().nullable().optional(),
-  status: EmployeeStatus.default('ACTIVE_AVAILABLE'), // TODO: to change in future tftf
+  status: EmployeeStatus.default('ACTIVE_AVAILABLE'),
 });
 
 // --- New employee creation schema ---
-// .omit({id: true}) is here to fix problem with passing id to the DB (database is using autoincrement for new rows)
-export const newEmployeeSchema = employeeBaseSchema.omit({ id: true }).extend({
-  // We expect that client will send array of integers.
-  technology_ids: z.array(z.number().int().positive()).optional(), // We can add e.g min(1) if we need IDK
+export const newEmployeeSchema = employeeBaseSchema.omit({ id: true });
+
+// --- Update employee schema --- (SIMPLIFIED - without technology_ids)
+export const updateEmployeeSchema = employeeBaseSchema.partial().extend({
+  id: z.number().int().positive(),
 });
 
-// --- Update employee schema ---
-// partial() is here to make all fields optional. e.g. client wants only to update technology field.
-export const updateEmployeeSchema = employeeBaseSchema.partial().extend({
-  // inside the extend() method we are defining specific fields as obligatory.
-  id: z.number().int().positive(),
-
-  // Client can send us new list of technologies.
-  technology_ids: z.array(z.number().int().positive()).optional(),
+// Schema for employee list with technologies
+export const employeeWithTechnologiesSchema = employeeBaseSchema.extend({
+  technologies: z.array(technologySelectionSchema),
 });
