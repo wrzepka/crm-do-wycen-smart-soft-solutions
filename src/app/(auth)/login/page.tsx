@@ -8,7 +8,18 @@ import { signIn } from 'next-auth/react';
 import { Lock, Mail, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 import { loginAction } from '@/lib/actions/login';
 import { FormErrors } from '@/types/auth-types';
-import styles from './login.module.css';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,8 +36,8 @@ export default function LoginPage() {
     setFieldErrors({});
 
     const formData = new FormData(event.currentTarget);
-
     //server action validation check
+
     const result = await loginAction(formData);
 
     if (!result.ok) {
@@ -65,108 +76,131 @@ export default function LoginPage() {
   }
 
   return (
-    //ux
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div className={styles.logoWrapper}>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-[420px] shadow-lg">
+        <CardHeader className="flex flex-col items-center text-center space-y-2">
+          <div className="flex items-center justify-center mb-2">
             <Image
               src="/logo.png"
               alt="Logo Firmy"
               width={180}
               height={60}
-              className={styles.logoImage}
+              className="h-auto w-auto max-w-[300px] max-h-[100px] object-contain"
               priority
             />
           </div>
-          <div className={styles.title}>Witaj w portalu</div>
-          <h1 className={styles.companyName}>Bieloidziska twierdza 3000</h1>
-          <p className={styles.description}>Zaloguj się, aby zarządzać projektami.</p>
-        </div>
+          <CardTitle className="text-lg font-medium text-muted-foreground">
+            Witaj w portalu
+          </CardTitle>
+          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent">
+            Bieloidziska twierdza 3000
+          </h1>
+          <CardDescription>Zaloguj się, aby zarządzać projektami.</CardDescription>
+        </CardHeader>
 
-        <form onSubmit={handleSubmit} noValidate>
-          {globalError && (
-            <div className="mb-6 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
-              <AlertCircle size={16} />
-              {globalError}
-            </div>
-          )}
+        <CardContent>
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
+            {globalError && (
+              <div className="p-3 text-sm text-destructive bg-destructive/5 border border-destructive/20 rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                <AlertCircle size={16} />
+                {globalError}
+              </div>
+            )}
 
-          <div className={styles.formGroup}>
-            <div className={styles.labelRow}>
-              <label htmlFor="email" className={styles.label}>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-base font-semibold">
                 E-mail
-              </label>
+              </Label>
+              <div className="relative">
+                <Mail
+                  className={cn(
+                    'absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-colors',
+                    fieldErrors.email && 'text-destructive',
+                  )}
+                  size={20}
+                />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="imie.nazwisko@smart.pl"
+                  className={cn(
+                    'pl-10 h-11 text-base',
+                    fieldErrors.email && 'border-destructive focus-visible:ring-destructive/20',
+                  )}
+                  aria-invalid={!!fieldErrors.email}
+                />
+              </div>
+              {fieldErrors.email && (
+                <p className="text-sm font-medium text-destructive ml-1 animate-in slide-in-from-top-1">
+                  {fieldErrors.email[0]}
+                </p>
+              )}
             </div>
 
-            <div className={styles.inputWrapper}>
-              <Mail
-                className={styles.icon}
-                size={18}
-                style={fieldErrors.email ? { color: 'var(--destructive)' } : {}}
-              />
-              <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="imie.nazwisko@smart.pl"
-                className={`${styles.input} ${fieldErrors.email ? styles.inputError : ''}`}
-                aria-invalid={!!fieldErrors.email}
-              />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-base font-semibold">
+                  Hasło
+                </Label>
+                <Link href="#" className="text-sm font-medium text-primary hover:underline">
+                  Zapomniałeś hasła?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock
+                  className={cn(
+                    'absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-colors',
+                    fieldErrors.password && 'text-destructive',
+                  )}
+                  size={20}
+                />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className={cn(
+                    'pl-10 h-11 text-base',
+                    fieldErrors.password && 'border-destructive focus-visible:ring-destructive/20',
+                  )}
+                  aria-invalid={!!fieldErrors.password}
+                />
+              </div>
+              {fieldErrors.password && (
+                <p className="text-sm font-medium text-destructive ml-1 animate-in slide-in-from-top-1">
+                  {fieldErrors.password[0]}
+                </p>
+              )}
             </div>
-            {fieldErrors.email && <p className={styles.errorMessage}>{fieldErrors.email[0]}</p>}
+
+            <Button
+              type="submit"
+              className="w-full h-11 text-base font-semibold mt-2"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  Logowanie... <Loader2 className="animate-spin ml-2" size={18} />
+                </>
+              ) : (
+                <>
+                  Zaloguj się <ChevronRight className="ml-2" size={18} />
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="justify-center border-t pt-6 mt-4">
+          <div className="text-sm text-muted-foreground">
+            Nie masz konta?{' '}
+            <Link href="#" className="font-medium text-primary hover:underline">
+              Skontaktuj się z administratorem
+            </Link>
           </div>
-
-          <div className={styles.formGroup}>
-            <div className={styles.labelRow}>
-              <label htmlFor="password" className={styles.label}>
-                Hasło
-              </label>
-              <Link href="#" className={styles.link}>
-                Zapomniałeś hasła?
-              </Link>
-            </div>
-
-            <div className={styles.inputWrapper}>
-              <Lock
-                className={styles.icon}
-                size={18}
-                style={fieldErrors.password ? { color: 'var(--destructive)' } : {}}
-              />
-              <input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                className={`${styles.input} ${fieldErrors.password ? styles.inputError : ''}`}
-                aria-invalid={!!fieldErrors.password}
-              />
-            </div>
-            {fieldErrors.password && (
-              <p className={styles.errorMessage}>{fieldErrors.password[0]}</p>
-            )}
-          </div>
-
-          <button type="submit" className={styles.button} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                Logowanie... <Loader2 className="animate-spin ml-2" size={16} />
-              </>
-            ) : (
-              <>
-                Zaloguj się <ChevronRight size={16} />
-              </>
-            )}
-          </button>
-        </form>
-
-        <div className={styles.footer}>
-          Nie masz konta?{' '}
-          <Link href="#" className={styles.link}>
-            Skontaktuj się z administratorem
-          </Link>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
