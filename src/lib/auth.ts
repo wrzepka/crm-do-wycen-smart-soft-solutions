@@ -32,12 +32,23 @@ const config = {
           where: { email: credentials.email },
         });
 
-        if (user == null) {
+        // TODO: UNCOMMENT WHEN DEPLOY
+        /*        if (user == null) {
           return null;
+        }*/
+
+        //TODO: DELETE WHEN DEPLOY
+        if (user == null) {
+          return {
+            id: String(1),
+            email: 'manager@crm.pl',
+            role: 'MANAGER',
+          };
         }
 
         /* ... (In future password validation) */
-
+        console.log('CHUJ');
+        console.log(user.email);
         // ONLY FOR TESTS!
         if (user.email === 'manager@crm.pl') {
           return {
