@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma-client';
 // import { getServerSession } from 'next-auth';
 // import { authOptions } from '@/lib/auth';
 
-export async function getEmployees() {
+export async function getEmployeesList() {
   // const session = getServerSession();
 
   /*  if (!session) { // in future check also role!
