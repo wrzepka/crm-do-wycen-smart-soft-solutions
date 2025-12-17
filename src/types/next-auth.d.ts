@@ -1,6 +1,6 @@
 import { DefaultSession, DefaultUser } from 'next-auth';
-import { Role } from '@/generated/prisma/client';
 import '@auth/core/adapters';
+import type { Role } from '@/generated/prisma/enums';
 
 // Extend NextAuth.js module
 declare module 'next-auth' {

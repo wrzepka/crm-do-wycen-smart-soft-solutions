@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth';
-import { authConfig } from '@/lib/auth.config';
+import { authConfig } from './auth.config';
 
 // Initialize light configuration (without Prisma)
 // Whole authentication is inside of auth.config.ts

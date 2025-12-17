@@ -3,9 +3,9 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import Credentials from 'next-auth/providers/credentials';
 import { loginSchema } from '@/lib/schemas/authSchema';
 import { prisma } from '@/lib/prisma-client';
-import { Role } from '@/generated/prisma/enums';
+import { Role } from '@/generated/prisma/client';
 import { type Adapter } from '@auth/core/adapters';
-import { authConfig } from './auth.config'; // Import konfiguracji
+import { authConfig } from '@/auth.config'; // configuration import
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig, // Unpack base (light) config
