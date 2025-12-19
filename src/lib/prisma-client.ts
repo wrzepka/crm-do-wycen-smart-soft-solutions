@@ -1,17 +1,26 @@
-// src/lib/prisma-client.ts
-import { PrismaClient } from '@/generated/prisma/client'; // POPRAWIONY IMPORT
+import { PrismaClient } from '@/generated/prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-// Extend the global scope to store PrismaClient instance for hot-reload prevention
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+// --- SOLUTION FOR HOT-RELOAD PROBLEM IN DEV ENV ---
+// Client creation function
+const prismaClientSingleton = () => {
+  // Configure pool for connection
+  const connectionString = process.env.DATABASE_URL;
+  const pool = new Pool({ connectionString });
+
+  // Create adapter for prisma
+  const adapter = new PrismaPg(pool);
+
+  // Initialize new client
+  return new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
+};
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
