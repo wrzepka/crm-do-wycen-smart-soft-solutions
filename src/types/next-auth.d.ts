@@ -1,5 +1,6 @@
 import { DefaultSession, DefaultUser } from 'next-auth';
-import { Role } from '@/generated/prisma/client';
+import '@auth/core/adapters';
+import type { Role } from '@/generated/prisma/enums';
 
 // Extend NextAuth.js module
 declare module 'next-auth' {
@@ -13,12 +14,26 @@ declare module 'next-auth' {
   }
 
   interface User extends DefaultUser {
+    id?: string;
     role: Role;
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
+    id: string;
+    role: Role;
+  }
+}
+
+declare module '@auth/core/adapters' {
+  interface AdapterUser {
+    role: Role;
+  }
+}
+
+declare module 'next-auth/node_modules/@auth/core/adapters' {
+  interface AdapterUser {
     role: Role;
   }
 }

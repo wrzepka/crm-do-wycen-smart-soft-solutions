@@ -105,49 +105,62 @@ model technologies {
   employee_technology employee_technology[]
 }
 
-enum Role{
+enum Role {
   MANAGER
 }
 
 model users {
-  id            Int    @id @default(autoincrement())
+  id            String @id @default(cuid())
   email         String @unique @db.VarChar(150)
   password_hash String
-  role Role @default(MANAGER)
+  role          Role   @default(MANAGER)
 
-  // NextAuth relations
-  accounts      Account[]
-  sessions      Session[]
+  // Relations to other Auth.js models
+  accounts Account[]
+  sessions Session[]
+
+  // Fields required by Auth.js v5 for profile and verification status
+  emailVerified DateTime?
+  image         String?
 }
 
-// Account model
-// Maps external providers such as Google, Github.
-// It is required because we are using CredentialsProvider.
+// The Account model stores information about OAuth accounts (Google, GitHub, etc.)
+// linked to a specific user. It handles the link between the provider and your app.
 model Account {
   id                String  @id @default(cuid())
-  userId            Int
-  type              String
-  provider          String
-  providerAccountId String
+  userId            String // Foreign key connecting this account to a User
+  type              String // Type of account (e.g., "oauth", "oidc")
+  provider          String // Name of the provider (e.g., "google", "github")
+  providerAccountId String // Unique ID provided by the external auth service
   refresh_token     String? @db.Text
   access_token      String? @db.Text
-  expires_at        Int?
+  expires_at        Int? // Timestamp when the access token expires
   token_type        String?
   scope             String?
   id_token          String? @db.Text
   session_state     String?
 
-  user              users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
-// Session model
-// Contains active session tokens.
+// The Session model is used for database-based sessions.
+// It keeps track of active users and their session expiration.
 model Session {
-  id           String    @id @default(cuid())
-  sessionToken String    @unique
-  userId       Int
-  expires      DateTime
-  user         users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  sessionToken String   @unique // Unique token sent to the browser via cookie
+  userId       String // Reference to the user who owns this session
+  expires      DateTime // When the session will automatically log out the user
+  user         users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// The VerificationToken model stores temporary tokens used for passwordless login
+// (Magic Links) or email verification processes.
+model VerificationToken {
+  identifier String // Typically the user's email address
+  token      String   @unique // The secure random token sent to the user
+  expires    DateTime // Expiration time for the token (usually short-lived)
+
+  @@unique([identifier, token])
 }
