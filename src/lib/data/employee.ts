@@ -29,3 +29,41 @@ export async function getEmployeesList(): Promise<EmployeeWithRelations[]> {
     return [];
   }
 }
+
+//gets employee stats for dashboard/employees page cards
+export async function getEmployeeStats() {
+  const stats = await prisma.employees.groupBy({
+    by: ['status'],
+    _count: {
+      status: true,
+    },
+  });
+
+  const result = {
+    total: 0,
+    available: 0,
+    booked: 0,
+    on_leave: 0,
+    onboarding: 0,
+  };
+
+  stats.forEach((group) => {
+    const count = group._count.status;
+    result.total += count;
+
+    if (group.status === 'ACTIVE_AVAILABLE') {
+      result.available = count;
+    }
+    if (group.status === 'ACTIVE_BOOKED') {
+      result.booked = count;
+    }
+    if (group.status === 'ON_LEAVE') {
+      result.on_leave = count;
+    }
+    if (group.status === 'ONBOARDING') {
+      result.onboarding = count;
+    }
+  });
+
+  return result;
+}
