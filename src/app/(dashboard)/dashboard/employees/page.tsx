@@ -1,47 +1,97 @@
+import { getEmployeesList, getEmployeeStats } from '@/lib/data/employee';
 import { EmployeeListTable } from '@/components/shared/EmployeeListTable';
-import { EmployeeWithRelations } from '@/types/employee';
+import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
+import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default async function EmployeesPage() {
-  // 1. MOCK DATA - testing data
-  // TODO: Hubert do rest pls xpp
-  const mockEmployees = [
-    {
-      id: 1,
-      first_name: 'Jan',
-      last_name: 'Kowalski',
-      status: 'ACTIVE',
-      // 1:N relation simulation
-      employee_technology: [
-        { technologies: { id: 1, name: 'React' } },
-        { technologies: { id: 2, name: 'Node.js' } },
-        { technologies: { id: 3, name: 'TypeScript' } },
-      ],
-    },
-    {
-      id: 2,
-      first_name: 'Anna',
-      last_name: 'Nowak',
-      status: 'ACTIVE_BOOKED',
-      busy_from: new Date('2023-11-01'),
-      busy_to: new Date('2024-02-01'),
-      employee_technology: [{ technologies: { id: 4, name: 'Figma' } }],
-    },
-    {
-      id: 3,
-      first_name: 'Piotr',
-      last_name: 'Zieliński',
-      status: 'ON_LEAVE',
-      busy_from: new Date('2023-12-20'),
-      busy_to: new Date('2024-01-05'),
-      employee_technology: [],
-    },
-  ] as unknown as EmployeeWithRelations[];
+  // Fetch employee list and statistics in parallel for better performance
+  const [employeesData, stats] = await Promise.all([getEmployeesList(), getEmployeeStats()]);
 
   return (
-    <div className="p-8 space-y-4">
-      <h1 className="text-2xl font-bold">Zespół</h1>
-      {/* Give mock data instead of real one*/}
-      <EmployeeListTable data={mockEmployees} />
+    <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">
+      {/* Page header section with title and add employee button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Zespół
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
+            Zarządzaj dostępnością i alokacją Twoich specjalistów.
+          </p>
+        </div>
+        <EmployeeSheet />
+      </div>
+
+      {/* Grid layout for displaying key performance indicator cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Wszyscy Pracownicy"
+          value={stats.total}
+          icon={Users}
+          description="Całkowita liczba w bazie"
+        />
+        <StatCard
+          title="Dostępni (Ławka)"
+          value={stats.available}
+          icon={CheckCircle}
+          className="border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-900/10"
+          iconColor="text-emerald-600"
+          description="Gotowi do przypisania"
+        />
+        <StatCard
+          title="W Projektach"
+          value={stats.booked}
+          icon={Briefcase}
+          iconColor="text-blue-600"
+          description="Aktualnie pracują komercyjnie"
+        />
+        <StatCard
+          title="Urlopy / Niedostępni"
+          value={stats.on_leave + stats.onboarding}
+          icon={Clock}
+          iconColor="text-slate-500"
+          description="Tymczasowo nieobecni"
+        />
+      </div>
+
+      {/* Interactive table component displaying the list of employees */}
+      <EmployeeListTable data={employeesData} />
     </div>
+  );
+}
+
+// Interface defining the expected props for the StatCard component
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: LucideIcon;
+  description: string;
+  className?: string;
+  iconColor?: string;
+}
+
+// Reusable component for rendering individual statistic cards
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  description,
+  className,
+  iconColor = 'text-slate-900 dark:text-white',
+}: StatCardProps) {
+  return (
+    <Card className={`border-slate-200 dark:border-slate-800 shadow-sm ${className}`}>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between space-y-0 pb-2">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
+          <Icon className={`h-4 w-4 ${iconColor}`} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
+          <p className="text-xs text-slate-400 dark:text-slate-500">{description}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
