@@ -9,9 +9,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit2, Search, Code2 } from 'lucide-react';
+import { Edit2, Search } from 'lucide-react';
 import { TechnologySheet } from '@/components/dashboard/technologies/technology-sheet';
 import { Input } from '@/components/ui/input';
+import { getColorForTechnology } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 
 // Simplified interface matching Prisma output
@@ -71,12 +73,12 @@ export function TechnologyListTable({ data }: Props) {
                 >
                   <TableCell className="pl-6">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                        <Code2 size={16} />
-                      </div>
-                      <span className="font-medium text-slate-900 dark:text-white">
+                      <Badge
+                        variant="outline"
+                        className={`text-sm font-medium border ${getColorForTechnology(tech.name)}`}
+                      >
                         {tech.name}
-                      </span>
+                      </Badge>
                     </div>
                   </TableCell>
                   <TableCell className="text-right pr-6">

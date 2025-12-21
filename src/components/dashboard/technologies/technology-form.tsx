@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { Loader2, Cpu } from 'lucide-react';
+import { Loader2, Code2 } from 'lucide-react';
 import { z } from 'zod';
 import { newTechnologySchema } from '@/lib/schemas/technologySchema';
 import { createTechnology, updateTechnology } from '@/lib/actions/technology-actions';
@@ -60,7 +60,6 @@ export function TechnologyForm({ initialData, onSuccess }: TechnologyFormProps) 
         router.refresh();
         if (onSuccess) onSuccess();
       } else {
-        // POPRAWKA: Zamiast 'as any', rzutujemy na obiekt, który może mieć pole error
         const errorMsg = (result as { error?: string }).error;
         toast.error(errorMsg || 'Wystąpił błąd');
       }
@@ -74,7 +73,7 @@ export function TechnologyForm({ initialData, onSuccess }: TechnologyFormProps) 
         <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-5 space-y-6">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
-              <Cpu size={14} className="text-blue-500" />
+              <Code2 size={14} className="text-blue-500" />
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
                 Szczegóły
               </span>
@@ -106,7 +105,7 @@ export function TechnologyForm({ initialData, onSuccess }: TechnologyFormProps) 
           <Button
             type="submit"
             disabled={isPending}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 text-sm font-medium shadow-md shadow-blue-900/10 transition-all"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 text-sm font-medium shadow-md shadow-blue-900/10 transition-all cursor-pointer "
           >
             {isPending ? (
               <>
