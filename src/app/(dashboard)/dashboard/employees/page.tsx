@@ -3,18 +3,15 @@ import { EmployeeListTable } from '@/components/shared/EmployeeListTable';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-// 1. Importujemy akcję do pobierania technologii
 import { getAllTechnologies } from '@/lib/actions/technology-actions';
 
 export default async function EmployeesPage() {
-  // 2. Pobieramy listę pracowników, statystyki ORAZ technologie równolegle
   const [employeesData, stats, technologiesResult] = await Promise.all([
     getEmployeesList(),
     getEmployeeStats(),
     getAllTechnologies(),
   ]);
 
-  // 3. Zabezpieczamy pobrane dane (jeśli wystąpi błąd, używamy pustej tablicy)
   const allTechnologies =
     technologiesResult.ok && technologiesResult.data ? technologiesResult.data : [];
 
@@ -66,7 +63,6 @@ export default async function EmployeesPage() {
       </div>
 
       {/* Interactive table component displaying the list of employees */}
-      {/* 4. Przekazujemy pobrane technologie do tabeli */}
       <EmployeeListTable data={employeesData} allTechnologies={allTechnologies} />
     </div>
   );
