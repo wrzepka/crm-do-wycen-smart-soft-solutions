@@ -8,20 +8,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit2, Search } from 'lucide-react';
 import { EmployeeWithRelations } from '@/types/employee';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { EmployeeTechnologiesCell } from '@/components/dashboard/employees/employee-technologies-cell';
 
 // Defining props interface to ensure type safety for employee data input
 interface Props {
   data: EmployeeWithRelations[];
+  // adding all technologies from page.tsx
+  allTechnologies: { id: number; name: string }[];
 }
 
-export function EmployeeListTable({ data }: Props) {
+export function EmployeeListTable({ data, allTechnologies }: Props) {
   // State to manage the search input value visual state
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -51,7 +53,7 @@ export function EmployeeListTable({ data }: Props) {
             <TableRow className="border-slate-200 dark:border-slate-800 hover:bg-transparent">
               <TableHead className="text-slate-500 font-semibold pl-6">Pracownik</TableHead>
               <TableHead className="text-slate-500 font-semibold">Status</TableHead>
-              <TableHead className="text-slate-500 font-semibold">Technologie</TableHead>
+              <TableHead className="text-slate-500 font-semibold w-[35%]">Technologie</TableHead>
               <TableHead className="text-right text-slate-500 font-semibold pr-6">Akcje</TableHead>
             </TableRow>
           </TableHeader>
@@ -97,28 +99,15 @@ export function EmployeeListTable({ data }: Props) {
                       )}
                     </div>
                   </TableCell>
+
                   <TableCell>
-                    <div className="flex flex-wrap gap-1.5">
-                      {/* Limit displayed technologies to 3 and show a counter for the rest */}
-                      {employee.employee_technology.slice(0, 3).map((rel) => (
-                        <Badge
-                          key={rel.technologies.id}
-                          variant="outline"
-                          className="font-normal border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-transparent"
-                        >
-                          {rel.technologies.name}
-                        </Badge>
-                      ))}
-                      {employee.employee_technology.length > 3 && (
-                        <Badge
-                          variant="outline"
-                          className="border-dashed border-slate-300 text-slate-400"
-                        >
-                          + {employee.employee_technology.length - 3}
-                        </Badge>
-                      )}
-                    </div>
+                    <EmployeeTechnologiesCell
+                      employeeId={employee.id}
+                      initialTechIds={employee.employee_technology.map((et) => et.technology_id)}
+                      allTechnologies={allTechnologies}
+                    />
                   </TableCell>
+
                   <TableCell className="text-right pr-6">
                     {/* Triggering the edit sheet with the selected employee data */}
                     <EmployeeSheet employee={employee}>
@@ -153,6 +142,8 @@ function StatusBadge({ status }: { status: string }) {
       'bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-400 border-slate-200 dark:border-slate-600',
     ONBOARDING:
       'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 border-purple-200 dark:border-purple-500/20',
+    TERMINATED:
+      'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-900/30',
   };
 
   // Mapping status keys to human-readable Polish labels
