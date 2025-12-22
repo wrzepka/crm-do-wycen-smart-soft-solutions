@@ -27,6 +27,8 @@ export const employeeBaseSchema = z.object({
     .max(100, { message: 'Nazwisko nie może przekraczać 100 znaków' }),
   busy_from: z.date().nullable().optional(),
   busy_to: z.date().nullable().optional(),
+  //to intreactive cell for employee technologies
+  technologyIds: z.array(z.number()).optional(),
   status: EmployeeStatus.default('ACTIVE_AVAILABLE'),
 });
 

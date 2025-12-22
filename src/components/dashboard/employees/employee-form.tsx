@@ -304,7 +304,7 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
           <Button
             type="submit"
             disabled={isPending}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 text-sm font-medium shadow-md shadow-blue-900/10 transition-all"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 text-sm font-medium shadow-md shadow-blue-900/10 transition-all cursor-pointer"
           >
             {isPending ? (
               <>
