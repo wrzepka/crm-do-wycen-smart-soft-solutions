@@ -33,7 +33,7 @@ export function EmployeeSheet({ employee, children }: EmployeeSheetProps) {
         {children ? (
           children
         ) : (
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 cursor-pointer">
             <Plus size={18} />
             Dodaj pracownika
           </Button>

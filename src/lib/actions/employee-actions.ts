@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { newEmployeeSchema, updateEmployeeSchema } from '@/lib/schemas/employeeSchema';
 import { prisma } from '@/lib/prisma-client';
 import type { Prisma } from '@/generated/prisma/client';
+import { setEmployeeTechnologies } from '@/lib/actions/technology-actions';
 
 // Helper function to parse FormData
 function parseFormData(input: FormData | Record<string, unknown>) {
@@ -281,5 +282,21 @@ export async function getEmployeeWithTechnologies(id: number | string) {
     const message =
       err instanceof Error ? err.message : 'Błąd podczas pobierania danych pracownika';
     return { ok: false, error: message };
+  }
+}
+
+//to update employee technologies from interactive cell
+export async function updateEmployeeTechnologiesAction(
+  employeeId: number,
+  technologyIds: number[],
+) {
+  try {
+    await setEmployeeTechnologies(employeeId, technologyIds);
+
+    revalidatePath('/dashboard/employees');
+    return { ok: true };
+  } catch (error) {
+    console.error('Błąd aktualizacji technologii:', error);
+    return { ok: false, error: 'Nie udało się zaktualizować technologii' };
   }
 }

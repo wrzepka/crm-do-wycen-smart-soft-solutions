@@ -3,10 +3,17 @@ import { EmployeeListTable } from '@/components/shared/EmployeeListTable';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { getAllTechnologies } from '@/lib/actions/technology-actions';
 
 export default async function EmployeesPage() {
-  // Fetch employee list and statistics in parallel for better performance
-  const [employeesData, stats] = await Promise.all([getEmployeesList(), getEmployeeStats()]);
+  const [employeesData, stats, technologiesResult] = await Promise.all([
+    getEmployeesList(),
+    getEmployeeStats(),
+    getAllTechnologies(),
+  ]);
+
+  const allTechnologies =
+    technologiesResult.ok && technologiesResult.data ? technologiesResult.data : [];
 
   return (
     <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">
@@ -56,7 +63,7 @@ export default async function EmployeesPage() {
       </div>
 
       {/* Interactive table component displaying the list of employees */}
-      <EmployeeListTable data={employeesData} />
+      <EmployeeListTable data={employeesData} allTechnologies={allTechnologies} />
     </div>
   );
 }
