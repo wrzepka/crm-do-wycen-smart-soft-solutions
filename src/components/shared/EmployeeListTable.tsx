@@ -77,7 +77,9 @@ export function EmployeeListTable({ data, allTechnologies }: Props) {
                       <span className="font-medium text-slate-900 dark:text-white text-base">
                         {employee.first_name} {employee.last_name}
                       </span>
-                      <span className="text-xs text-slate-500">Programista</span>
+                      {employee.position != null && (
+                        <span className="text-xs text-slate-500">{employee.position.name}</span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>

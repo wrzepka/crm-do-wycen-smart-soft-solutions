@@ -26,5 +26,6 @@ export type EmployeeWithRelations = Prisma.employeesGetPayload<{
         technologies: true;
       };
     };
+    position;
   };
 }>;

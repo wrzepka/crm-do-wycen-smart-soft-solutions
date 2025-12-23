@@ -7,8 +7,8 @@ export async function getEmployeesList(): Promise<EmployeeWithRelations[]> {
   // const session = getServerSession();
 
   /*  if (!session) { // in future check also role!
-      return [];
-  }*/
+        return [];
+    }*/
 
   //TODO: add the number of assigned projects
   try {
@@ -20,6 +20,7 @@ export async function getEmployeesList(): Promise<EmployeeWithRelations[]> {
             technologies: true,
           },
         },
+        position: true,
       },
     });
 
