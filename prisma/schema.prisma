@@ -57,8 +57,12 @@ model employees {
   busy_from           DateTime?             @db.Date
   busy_to             DateTime?             @db.Date
   status              EmployeeStatus        @default(ACTIVE_AVAILABLE)
+  position_id         Int?
   employee_technology employee_technology[]
+  positions           positions?            @relation(fields: [position_id], references: [id], onUpdate: NoAction, map: "fk_employees_position")
   projects            projects[]
+
+  @@index([position_id], map: "idx_employees_position_id")
 }
 
 model pricing_history {
@@ -164,3 +168,13 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model positions {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique @db.VarChar(100)
+  employees employees[]
+}
+
+
+
+
