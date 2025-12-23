@@ -59,7 +59,7 @@ model employees {
   status              EmployeeStatus        @default(ACTIVE_AVAILABLE)
   position_id         Int?
   employee_technology employee_technology[]
-  positions           positions?            @relation(fields: [position_id], references: [id], onUpdate: NoAction, map: "fk_employees_position")
+  position           positions?            @relation(fields: [position_id], references: [id], onUpdate: NoAction, map: "fk_employees_position")
   projects            projects[]
 
   @@index([position_id], map: "idx_employees_position_id")
