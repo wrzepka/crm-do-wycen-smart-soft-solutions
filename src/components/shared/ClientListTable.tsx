@@ -9,10 +9,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { clients } from '@/generated/prisma/client';
+import { ClientWithRelations } from '@/types/client';
+import { Button } from '@/components/ui/button';
+import { Info } from 'lucide-react';
+import { ClientSheet } from '@/components/dashboard/clients/client-sheet';
 
 interface Props {
-  data: clients[];
+  data: ClientWithRelations[];
 }
 
 export function ClientListTable({ data }: Props) {
@@ -25,6 +28,7 @@ export function ClientListTable({ data }: Props) {
             <TableHead className="text-slate-500 font-semibold">Imię i Nazwisko</TableHead>
             <TableHead className="text-slate-500 font-semibold">Email</TableHead>
             <TableHead className="text-slate-500 font-semibold">Telefon</TableHead>
+            <TableHead className="text-right text-slate-500 font-semibold pr-6">Akcje</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -63,6 +67,18 @@ export function ClientListTable({ data }: Props) {
                   <span className="font-medium text-slate-900 dark:text-white text-base">
                     {client.phone || 'Brak numeru'}
                   </span>
+                </TableCell>
+                <TableCell className="text-right pr-6">
+                  {/* Triggering the edit sheet with the selected employee data */}
+                  <ClientSheet client={client}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer"
+                    >
+                      <Info size={15} />
+                    </Button>
+                  </ClientSheet>
                 </TableCell>
               </TableRow>
             ))
