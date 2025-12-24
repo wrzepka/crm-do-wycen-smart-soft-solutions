@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { clients } from '@/generated/prisma/client';
 
 interface Props {
@@ -41,13 +42,11 @@ export function ClientListTable({ data }: Props) {
               >
                 <TableCell className="pl-6">
                   {client.is_lead ? (
-                    <span className="font-medium text-slate-900 dark:text-white text-base">
-                      Lead
-                    </span>
+                    <Badge className="border-amber-200 bg-amber-50 text-amber-700">Lead</Badge>
                   ) : (
-                    <span className="font-medium text-slate-900 dark:text-white text-base">
+                    <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
                       Klient
-                    </span>
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell>
