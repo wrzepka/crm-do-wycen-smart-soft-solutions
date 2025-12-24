@@ -6,24 +6,41 @@ import { prisma } from '@/lib/prisma-client';
 import type { Prisma } from '@/generated/prisma/client';
 import { setEmployeeTechnologies } from '@/lib/actions/technology-actions';
 
-// Helper function to parse FormData
+/**
+ * Parses FormData or Record input into structured data
+ * Handles technology_ids array and position_id field
+ * @param input - FormData or Record<string, unknown>
+ * @returns Object with data, technologyIds, and positionId
+ */
 function parseFormData(input: FormData | Record<string, unknown>) {
   if (!(input instanceof FormData)) {
-    // Note: We assume JSON input does not update technologies (undefined) for simplicity.
-    // To support JSON updates, check for technology_ids field here.
-    return { data: input, technologyIds: undefined };
+    // For JSON input, return as-is (assumes no technology updates)
+    return { data: input, technologyIds: undefined, positionId: undefined };
   }
 
   const formData = input;
   const data: Record<string, unknown> = {};
   const technologyIds: number[] = [];
+  let positionId: number | null = null;
 
+  // Iterate through FormData entries
   for (const [key, value] of formData.entries()) {
-    // Handle multiple values for the same key (e.g. technology_ids[])
+    // Handle technology_ids (can be array with brackets)
     if (key === 'technology_ids' || key.startsWith('technology_ids[')) {
       const numValue = Number(value);
       if (!isNaN(numValue) && numValue > 0) {
         technologyIds.push(numValue);
+      }
+    }
+    // Handle position_id (can be empty/null)
+    else if (key === 'position_id') {
+      if (value === '' || value === 'null' || value === null) {
+        positionId = null;
+      } else {
+        const numValue = Number(value);
+        if (!isNaN(numValue) && numValue > 0) {
+          positionId = numValue;
+        }
       }
     } else {
       data[key] = value;
@@ -32,13 +49,18 @@ function parseFormData(input: FormData | Record<string, unknown>) {
 
   return {
     data,
-    // FIXED: Return array (even empty) if input is FormData.
-    // This signals updateEmployee to clear relations if needed.
+    // Return array (even empty) for FormData input
+    // This signals updateEmployee to clear relations if needed
     technologyIds,
+    positionId,
   };
 }
 
-// Helper function for date conversion
+/**
+ * Converts various date formats to Date object or null
+ * @param value - Unknown date value (string, Date, etc.)
+ * @returns Date | null - Parsed date or null if invalid
+ */
 function convertDateField(value: unknown): Date | null {
   if (value instanceof Date) return value;
   if (typeof value === 'string' && value.trim()) {
@@ -47,12 +69,34 @@ function convertDateField(value: unknown): Date | null {
   }
   return null;
 }
+/**
+ * Converts positionId to Prisma relation format
+ * @param positionId - Position ID (number, null, or undefined)
+ * @returns Prisma relation object for position field
+ */
+function createPositionRelation(positionId: number | null | undefined) {
+  if (positionId === undefined) {
+    return undefined; // Don't change the relation
+  }
 
+  if (positionId === null) {
+    return { disconnect: true }; // Remove position relation
+  }
+
+  return { connect: { id: positionId } }; // Set position relation
+}
+
+/**
+ * Server Action: Creates a new employee with technologies and position
+ * Handles FormData or Record input
+ * @param input - FormData or Record with employee data
+ * @returns Result object with success/failure status
+ */
 export async function createEmployee(input: FormData | Record<string, unknown>) {
   try {
-    const { data: payload, technologyIds } = parseFormData(input);
+    const { data: payload, technologyIds, positionId } = parseFormData(input);
 
-    // Date conversion
+    // Convert date strings to Date objects
     if (payload.busy_from !== undefined) {
       payload.busy_from = convertDateField(payload.busy_from);
     }
@@ -60,13 +104,18 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
       payload.busy_to = convertDateField(payload.busy_to);
     }
 
-    // Validation (excluding technology_ids)
+    // Handle position_id from parsed data
+    if (positionId !== undefined) {
+      payload.position_id = positionId;
+    }
+
+    // Validate employee data
     const validationResult = newEmployeeSchema.safeParse(payload);
     if (!validationResult.success) {
       const errors = validationResult.error.flatten();
       return {
         ok: false,
-        error: 'Błędy walidacji formularza', // You might want to translate error messages too
+        error: 'Form validation errors',
         fieldErrors: errors.fieldErrors,
         formErrors: errors.formErrors,
       };
@@ -76,23 +125,31 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
     let createdId: number;
 
     await prisma.$transaction(async (tx) => {
+      // Prepare data for creation
+      const createData: Prisma.employeesCreateInput = {
+        first_name: validData.first_name,
+        last_name: validData.last_name,
+        busy_from: validData.busy_from,
+        busy_to: validData.busy_to,
+        status: validData.status,
+      };
+
+      // Set position relation if defined
+      if (validData.position_id !== undefined) {
+        createData.position = createPositionRelation(validData.position_id);
+      }
+
       // Create employee
       const created = await tx.employees.create({
-        data: {
-          first_name: validData.first_name,
-          last_name: validData.last_name,
-          busy_from: validData.busy_from,
-          busy_to: validData.busy_to,
-          status: validData.status,
-        },
+        data: createData,
         select: { id: true },
       });
 
       createdId = created.id;
 
       // Assign technologies if provided
-      if (technologyIds && technologyIds.length > 0) {
-        // Verify if technologies exist
+      if (technologyIds?.length) {
+        // Verify technologies exist
         const existingTechs = await tx.technologies.findMany({
           where: { id: { in: technologyIds } },
           select: { id: true },
@@ -117,25 +174,32 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
     return { ok: true, id: createdId! };
   } catch (err: unknown) {
     console.error('Create employee error:', err);
-    const message = err instanceof Error ? err.message : 'Błąd podczas tworzenia pracownika';
+    const message = err instanceof Error ? err.message : 'Error creating employee';
     return { ok: false, error: message };
   }
 }
 
+/**
+ * Server Action: Updates an existing employee
+ * Supports partial updates of employee data, technologies, and position
+ * @param id - Employee ID (number or string)
+ * @param input - FormData or Record with updated data
+ * @returns Result object with success/failure status
+ */
 export async function updateEmployee(
   id: number | string,
   input: FormData | Record<string, unknown>,
 ) {
   try {
-    // Validate ID
-    if (!id) throw new Error('Brak ID pracownika');
+    // Validate ID parameter
+    if (!id) throw new Error('Missing employee ID');
 
     const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
-    if (Number.isNaN(parsedId)) throw new Error('Nieprawidłowe ID pracownika');
+    if (Number.isNaN(parsedId)) throw new Error('Invalid employee ID');
 
-    const { data: payload, technologyIds } = parseFormData(input);
+    const { data: payload, technologyIds, positionId } = parseFormData(input);
 
-    // Date conversion
+    // Convert date strings to Date objects
     if (payload.busy_from !== undefined) {
       payload.busy_from = convertDateField(payload.busy_from);
     }
@@ -143,7 +207,7 @@ export async function updateEmployee(
       payload.busy_to = convertDateField(payload.busy_to);
     }
 
-    // Validate employee data
+    // Validate employee data with ID
     const dataWithId = { ...payload, id: parsedId };
     const validationResult = updateEmployeeSchema.safeParse(dataWithId);
 
@@ -151,18 +215,15 @@ export async function updateEmployee(
       const errors = validationResult.error.flatten();
       return {
         ok: false,
-        error: 'Błędy walidacji formularza',
+        error: 'Form validation errors',
         fieldErrors: errors.fieldErrors,
         formErrors: errors.formErrors,
       };
     }
 
     const validData = validationResult.data;
-
-    // LOGIC FIX:
-    // If technologyIds is an array (even empty), !== undefined returns true.
-    // If input was a regular object without technology_ids, it returns false (undefined).
     const hasTechnologyUpdates = technologyIds !== undefined;
+    const hasPositionUpdate = positionId !== undefined;
 
     await prisma.$transaction(async (tx) => {
       // Check if employee exists
@@ -171,10 +232,10 @@ export async function updateEmployee(
       });
 
       if (!existingEmployee) {
-        throw new Error('Pracownik nie istnieje');
+        throw new Error('Employee does not exist');
       }
 
-      // Prepare update data with proper typing
+      // Prepare update data
       const updateData: Prisma.employeesUpdateInput = {};
 
       if (validData.first_name !== undefined) updateData.first_name = validData.first_name;
@@ -183,14 +244,18 @@ export async function updateEmployee(
       if (validData.busy_to !== undefined) updateData.busy_to = validData.busy_to;
       if (validData.status !== undefined) updateData.status = validData.status;
 
-      // Check for changes in employee data
+      // Handle position update
+      if (hasPositionUpdate) {
+        updateData.position = createPositionRelation(positionId);
+      }
+
       const hasEmployeeUpdates = Object.keys(updateData).length > 0;
 
       if (!hasEmployeeUpdates && !hasTechnologyUpdates) {
-        throw new Error('Nie podano żadnych pól do aktualizacji');
+        throw new Error('No fields provided for update');
       }
 
-      // Update employee data if there are changes
+      // Update employee data if changed
       if (hasEmployeeUpdates) {
         await tx.employees.update({
           where: { id: parsedId },
@@ -198,17 +263,16 @@ export async function updateEmployee(
         });
       }
 
-      // Update technologies if there are changes (including clearing)
+      // Update technologies if specified
       if (hasTechnologyUpdates) {
-        // 1. Remove existing associations (clear the list for this employee)
+        // Remove existing associations
         await tx.employee_technology.deleteMany({
           where: { employee_id: parsedId },
         });
 
-        // 2. Add new ones (only if the array has elements)
-        // If technologyIds is [], this block is skipped -> result: relations cleared.
+        // Add new associations if provided
         if (Array.isArray(technologyIds) && technologyIds.length > 0) {
-          // Verify if technologies exist
+          // Verify technologies exist
           const existingTechs = await tx.technologies.findMany({
             where: { id: { in: technologyIds } },
             select: { id: true },
@@ -234,16 +298,22 @@ export async function updateEmployee(
     return { ok: true, id: parsedId };
   } catch (err: unknown) {
     console.error('Update employee error:', err);
-    const message = err instanceof Error ? err.message : 'Błąd podczas aktualizacji pracownika';
+    const message = err instanceof Error ? err.message : 'Error updating employee';
     return { ok: false, error: message };
   }
 }
 
+/**
+ * Server Action: Fetches an employee with their technologies and position
+ * @param id - Employee ID (number or string)
+ * @returns Result object with employee data or error
+ */
 export async function getEmployeeWithTechnologies(id: number | string) {
   try {
     const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
-    if (Number.isNaN(parsedId)) throw new Error('Nieprawidłowe ID pracownika');
+    if (Number.isNaN(parsedId)) throw new Error('Invalid employee ID');
 
+    // Fetch employee with relations
     const employee = await prisma.employees.findUnique({
       where: { id: parsedId },
       include: {
@@ -257,35 +327,50 @@ export async function getEmployeeWithTechnologies(id: number | string) {
             },
           },
         },
+        position: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
     if (!employee) {
       return {
         ok: false,
-        error: 'Pracownik nie istnieje',
+        error: 'Employee does not exist',
       };
     }
 
-    // Format response
+    // Format response: flatten employee_technology to technologies array
     const formattedEmployee = {
       ...employee,
       technologies: employee.employee_technology.map((et) => ({
         id: et.technologies.id,
         name: et.technologies.name,
       })),
+      position: employee.position,
     };
+
+    // Remove intermediate relation field for cleaner API response
+    //delete formattedEmployee.employee_technology; <
 
     return { ok: true, data: formattedEmployee };
   } catch (err: unknown) {
     console.error('Get employee error:', err);
-    const message =
-      err instanceof Error ? err.message : 'Błąd podczas pobierania danych pracownika';
+    const message = err instanceof Error ? err.message : 'Error fetching employee data';
     return { ok: false, error: message };
   }
 }
 
-//to update employee technologies from interactive cell
+/**
+ * Server Action: Updates employee technologies from interactive cell
+ * Wrapper around setEmployeeTechnologies with revalidation
+ * @param employeeId - Employee ID
+ * @param technologyIds - Array of technology IDs
+ * @returns Result object with success/failure status
+ */
 export async function updateEmployeeTechnologiesAction(
   employeeId: number,
   technologyIds: number[],
@@ -296,7 +381,7 @@ export async function updateEmployeeTechnologiesAction(
     revalidatePath('/dashboard/employees');
     return { ok: true };
   } catch (error) {
-    console.error('Błąd aktualizacji technologii:', error);
-    return { ok: false, error: 'Nie udało się zaktualizować technologii' };
+    console.error('Error updating technologies:', error);
+    return { ok: false, error: 'Failed to update technologies' };
   }
 }
