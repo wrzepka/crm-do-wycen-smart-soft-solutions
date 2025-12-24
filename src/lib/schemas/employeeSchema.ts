@@ -26,12 +26,12 @@ export const employeeBaseSchema = z.object({
   id: z.number().int().positive(),
   first_name: z
     .string()
-    .min(1, { message: 'First name cannot be empty' })
-    .max(100, { message: 'First name cannot exceed 100 characters' }),
+    .min(1, { message: 'Imię nie może być puste' })
+    .max(100, { message: 'Imię nie może przekraczać 100 znaków' }),
   last_name: z
     .string()
-    .min(1, { message: 'Last name cannot be empty' })
-    .max(100, { message: 'Last name cannot exceed 100 characters' }),
+    .min(1, { message: 'Nazwisko nie może być puste' })
+    .max(100, { message: 'Nazwisko nie może przekraczać 100 znaków' }),
   busy_from: z.date().nullable().optional(), // Start date of busy period (optional)
   busy_to: z.date().nullable().optional(), // End date of busy period (optional)
   // For interactive cell to update employee technologies

@@ -69,6 +69,7 @@ function convertDateField(value: unknown): Date | null {
   }
   return null;
 }
+
 /**
  * Converts positionId to Prisma relation format
  * @param positionId - Position ID (number, null, or undefined)
@@ -115,7 +116,7 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
       const errors = validationResult.error.flatten();
       return {
         ok: false,
-        error: 'Form validation errors',
+        error: 'Błędy walidacji formularza',
         fieldErrors: errors.fieldErrors,
         formErrors: errors.formErrors,
       };
@@ -174,7 +175,7 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
     return { ok: true, id: createdId! };
   } catch (err: unknown) {
     console.error('Create employee error:', err);
-    const message = err instanceof Error ? err.message : 'Error creating employee';
+    const message = err instanceof Error ? err.message : 'Błąd podczas tworzenia pracownika';
     return { ok: false, error: message };
   }
 }
@@ -192,10 +193,10 @@ export async function updateEmployee(
 ) {
   try {
     // Validate ID parameter
-    if (!id) throw new Error('Missing employee ID');
+    if (!id) throw new Error('Brak ID pracownika');
 
     const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
-    if (Number.isNaN(parsedId)) throw new Error('Invalid employee ID');
+    if (Number.isNaN(parsedId)) throw new Error('Nieprawidłowe ID pracownika');
 
     const { data: payload, technologyIds, positionId } = parseFormData(input);
 
@@ -215,7 +216,7 @@ export async function updateEmployee(
       const errors = validationResult.error.flatten();
       return {
         ok: false,
-        error: 'Form validation errors',
+        error: 'Błędy walidacji formularza',
         fieldErrors: errors.fieldErrors,
         formErrors: errors.formErrors,
       };
@@ -232,7 +233,7 @@ export async function updateEmployee(
       });
 
       if (!existingEmployee) {
-        throw new Error('Employee does not exist');
+        throw new Error('Pracownik nie istnieje');
       }
 
       // Prepare update data
@@ -252,7 +253,7 @@ export async function updateEmployee(
       const hasEmployeeUpdates = Object.keys(updateData).length > 0;
 
       if (!hasEmployeeUpdates && !hasTechnologyUpdates) {
-        throw new Error('No fields provided for update');
+        throw new Error('Nie podano żadnych pól do aktualizacji');
       }
 
       // Update employee data if changed
@@ -298,7 +299,7 @@ export async function updateEmployee(
     return { ok: true, id: parsedId };
   } catch (err: unknown) {
     console.error('Update employee error:', err);
-    const message = err instanceof Error ? err.message : 'Error updating employee';
+    const message = err instanceof Error ? err.message : 'Błąd podczas aktualizacji pracownika';
     return { ok: false, error: message };
   }
 }
@@ -311,7 +312,7 @@ export async function updateEmployee(
 export async function getEmployeeWithTechnologies(id: number | string) {
   try {
     const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
-    if (Number.isNaN(parsedId)) throw new Error('Invalid employee ID');
+    if (Number.isNaN(parsedId)) throw new Error('Nieprawidłowe ID pracownika');
 
     // Fetch employee with relations
     const employee = await prisma.employees.findUnique({
@@ -339,7 +340,7 @@ export async function getEmployeeWithTechnologies(id: number | string) {
     if (!employee) {
       return {
         ok: false,
-        error: 'Employee does not exist',
+        error: 'Pracownik nie istnieje',
       };
     }
 
@@ -354,12 +355,13 @@ export async function getEmployeeWithTechnologies(id: number | string) {
     };
 
     // Remove intermediate relation field for cleaner API response
-    //delete formattedEmployee.employee_technology; <
+    // delete formattedEmployee.employee_technology;
 
     return { ok: true, data: formattedEmployee };
   } catch (err: unknown) {
     console.error('Get employee error:', err);
-    const message = err instanceof Error ? err.message : 'Error fetching employee data';
+    const message =
+      err instanceof Error ? err.message : 'Błąd podczas pobierania danych pracownika';
     return { ok: false, error: message };
   }
 }
@@ -382,6 +384,6 @@ export async function updateEmployeeTechnologiesAction(
     return { ok: true };
   } catch (error) {
     console.error('Error updating technologies:', error);
-    return { ok: false, error: 'Failed to update technologies' };
+    return { ok: false, error: 'Nie udało się zaktualizować technologii' };
   }
 }
