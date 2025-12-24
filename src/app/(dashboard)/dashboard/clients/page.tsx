@@ -28,6 +28,22 @@ const mockClients: clients[] = [
     phone: null,
     is_lead: true,
   },
+  {
+    id: 4,
+    first_name: 'Marek',
+    last_name: 'Zieliński',
+    email: 'm.zielinski@softwarehouse.io',
+    phone: null,
+    is_lead: true,
+  },
+  {
+    id: 5,
+    first_name: 'Marek',
+    last_name: 'Zieliński',
+    email: 'm.zielinski@softwarehouse.io',
+    phone: null,
+    is_lead: true,
+  },
 ];
 
 export default async function ClientsPage({
@@ -35,13 +51,13 @@ export default async function ClientsPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
-  // Get parameters
-  const sParams = await searchParams;
+  // Get page parameter
+  const { page } = await searchParams;
   // Get current page, otherwise set it to 1
-  const currentPage = Math.max(1, Number(sParams.page) || 1);
+  const currentPage = Math.max(1, Number(page) || 1);
   // Amount of rows per page
   const pageSize = 1;
-  // after tests: const data = await getClientsList();
+  // after tests: const data = await getClientsList(currentPage, pageSize);
   const data = mockClients;
   const totalPages = Math.ceil(data.length / pageSize);
 
