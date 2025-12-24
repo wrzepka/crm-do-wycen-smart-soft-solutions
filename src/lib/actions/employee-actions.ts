@@ -314,68 +314,6 @@ export async function updateEmployee(
 }
 
 /**
- * Server Action: Fetches an employee with their technologies and position
- * @param id - Employee ID (number or string)
- * @returns Result object with employee data or error
- */
-export async function getEmployeeWithTechnologies(id: number | string) {
-  try {
-    const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
-    if (Number.isNaN(parsedId)) throw new Error('Nieprawidłowe ID pracownika');
-
-    // Fetch employee with relations
-    const employee = await prisma.employees.findUnique({
-      where: { id: parsedId },
-      include: {
-        employee_technology: {
-          include: {
-            technologies: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        position: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    if (!employee) {
-      return {
-        ok: false,
-        error: 'Pracownik nie istnieje',
-      };
-    }
-
-    // Format response: flatten employee_technology to technologies array
-    const formattedEmployee = {
-      ...employee,
-      technologies: employee.employee_technology.map((et) => ({
-        id: et.technologies.id,
-        name: et.technologies.name,
-      })),
-      position: employee.position,
-    };
-
-    // Remove intermediate relation field for cleaner API response
-    // delete formattedEmployee.employee_technology;
-
-    return { ok: true, data: formattedEmployee };
-  } catch (err: unknown) {
-    console.error('Błąd pobierania pracownika:', err);
-    const message =
-      err instanceof Error ? err.message : 'Błąd podczas pobierania danych pracownika';
-    return { ok: false, error: message };
-  }
-}
-
-/**
  * Server Action: Updates employee technologies from interactive cell
  * Wrapper around setEmployeeTechnologies with revalidation
  * @param employeeId - Employee ID
