@@ -30,8 +30,8 @@ export type EmployeeWithRelations = Prisma.employeesGetPayload<{
   };
 }>;
 
-// Formatted type for frontend (without employee_technology relation)
-export type FormattedEmployee = Omit<employees, 'employee_technology'> & {
+// Formatted type for frontend (with employee_technology relation)
+export type FormattedEmployee = Omit<EmployeeWithRelations, 'employee_technology'> & {
   technologies: Array<{ id: number; name: string }>;
   position: { id: number; name: string } | null;
 };

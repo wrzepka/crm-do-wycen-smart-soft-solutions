@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { positionSelectionSchema } from './positionSchema';
+import { technologyIdsSchema } from './technologySchema';
 
 // Employee status enum - possible states of an employee
 export const EmployeeStatus = z.enum([
@@ -15,15 +17,9 @@ export const technologySelectionSchema = z.object({
   name: z.string(),
 });
 
-// Schema for position selection in forms
-export const positionSelectionSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string(),
-});
-
 // Base schema for employee data validation
 export const employeeBaseSchema = z.object({
-  id: z.number().int().positive(),
+  id: z.number().int().positive({ message: 'Nie poprawne ID pracownika' }),
   first_name: z
     .string()
     .min(1, { message: 'Imię nie może być puste' })
@@ -34,10 +30,15 @@ export const employeeBaseSchema = z.object({
     .max(100, { message: 'Nazwisko nie może przekraczać 100 znaków' }),
   busy_from: z.date().nullable().optional(), // Start date of busy period (optional)
   busy_to: z.date().nullable().optional(), // End date of busy period (optional)
-  // For interactive cell to update employee technologies
-  technologyIds: z.array(z.number()).optional(),
+  // For interactive cell to update employee technologies - using imported schema
+  technologyIds: technologyIdsSchema,
   status: EmployeeStatus.default('ACTIVE_AVAILABLE'), // Default status
-  position_id: z.number().int().positive().nullable().optional(), // Position reference
+  position_id: z
+    .number()
+    .int()
+    .positive({ message: 'Nie poprawne ID stanowiska' })
+    .nullable()
+    .optional(), // Position reference
 });
 
 // Schema for creating a new employee (without ID)

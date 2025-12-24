@@ -246,7 +246,16 @@ export async function updateEmployee(
       if (validData.status !== undefined) updateData.status = validData.status;
 
       // Handle position update
-      if (hasPositionUpdate) {
+      if (hasPositionUpdate && positionId !== null && positionId !== undefined) {
+        // Check if exits
+        const positionExists = await tx.positions.findUnique({
+          where: { id: positionId },
+          select: { id: true },
+        });
+
+        if (!positionExists) {
+          throw new Error('Wybrana pozycja nie istnieje w systemie');
+        }
         updateData.position = createPositionRelation(positionId);
       }
 
@@ -359,7 +368,7 @@ export async function getEmployeeWithTechnologies(id: number | string) {
 
     return { ok: true, data: formattedEmployee };
   } catch (err: unknown) {
-    console.error('Get employee error:', err);
+    console.error('Błąd pobierania pracownika:', err);
     const message =
       err instanceof Error ? err.message : 'Błąd podczas pobierania danych pracownika';
     return { ok: false, error: message };
