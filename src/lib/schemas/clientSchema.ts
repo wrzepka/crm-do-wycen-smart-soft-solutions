@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-// Client status enum (optional, if you need client statuses)
-export const ClientStatus = z.enum(['ACTIVE', 'INACTIVE', 'LEAD', 'FORMER']);
-export type ClientStatusType = z.infer<typeof ClientStatus>;
-
 // Base schema for client address validation
 export const clientAddressBaseSchema = z.object({
   id: z.number().int().positive().optional(),
