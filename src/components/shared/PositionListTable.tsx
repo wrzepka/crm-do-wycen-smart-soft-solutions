@@ -9,6 +9,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { positions } from '@/generated/prisma/client';
+import { Button } from '@/components/ui/button';
+import { Edit2 } from 'lucide-react';
 
 interface Props {
   data: positions[];
@@ -46,14 +48,21 @@ export function PositionListTable({ data }: Props) {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] text-slate-400 font-mono">
-                      {/*  TO CHANGE IN THE FUTURE. NOW IT IS HARD-CODED*/}
-                      10
+                    <span className="text-slate-400 font-mono">
+                      {/*TODO:  TO CHANGE IN THE FUTURE. NOW IT IS HARD-CODED*/}
+                      10 [zł/h]
                     </span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right pr-6">
-                  <span>BUTTON IDK</span>
+                  {/*TODO: ADD FUNCTIONALITY*/}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer"
+                  >
+                    <Edit2 size={15} />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))
