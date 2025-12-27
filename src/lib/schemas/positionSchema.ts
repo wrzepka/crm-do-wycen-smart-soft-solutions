@@ -19,3 +19,7 @@ export const positionSelectionSchema = z.object({
   id: z.number().int().positive(),
   name: z.string(),
 });
+
+export const deletePositionSchema = z.object({
+  id: z.number().int().positive(),
+});
