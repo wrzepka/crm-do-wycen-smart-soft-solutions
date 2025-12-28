@@ -111,8 +111,8 @@ export function EmployeeListTable({ data, allTechnologies }: Props) {
                   </TableCell>
 
                   <TableCell className="text-right pr-6">
-                    {/* Triggering the edit sheet with the selected employee data */}
-                    <EmployeeSheet employee={employee}>
+                    {/* Przekazujemy allTechnologies również tutaj */}
+                    <EmployeeSheet employee={employee} allTechnologies={allTechnologies}>
                       <Button
                         variant="ghost"
                         size="icon"

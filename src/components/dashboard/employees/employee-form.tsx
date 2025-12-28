@@ -1,9 +1,9 @@
-'use client'; // Marking as Client Component
+'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useTransition, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,49 +23,72 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
 import { newEmployeeSchema } from '@/lib/schemas/employeeSchema';
 import { createEmployee, updateEmployee } from '@/lib/actions/employee-actions';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Loader2, User, Briefcase, CalendarIcon } from 'lucide-react';
+import { Loader2, User, Briefcase, CalendarIcon, Cpu, Plus, X, Check } from 'lucide-react';
 import { pl } from 'date-fns/locale';
-// Importing specific type to fix "Unexpected any" lint error
 import { EmployeeWithRelations } from '@/types/employee';
+import { getColorForTechnology } from '@/lib/utils';
 
-// Deriving form values type directly from Zod schema
 type EmployeeFormValues = z.input<typeof newEmployeeSchema>;
 
 interface EmployeeFormProps {
-  // Using strict type with null support for database compatibility
   initialData?: EmployeeWithRelations | null;
   onSuccess?: () => void;
+  // Nowy prop - lista dostępnych technologii
+  allTechnologies: { id: number; name: string }[];
 }
 
-export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
+export function EmployeeForm({ initialData, onSuccess, allTechnologies }: EmployeeFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  // Stan dla popovera technologii
+  const [techOpen, setTechOpen] = useState(false);
+
+  // Pobranie początkowych ID technologii z relacji, jeśli edytujemy
+  const defaultTechIds = initialData?.employee_technology?.map((et) => et.technology_id) || [];
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(newEmployeeSchema),
     defaultValues: {
       first_name: initialData?.first_name || '',
       last_name: initialData?.last_name || '',
-      // Safely casting status to match schema type avoiding explicit any
       status: initialData?.status
         ? (initialData.status as EmployeeFormValues['status'])
         : 'ACTIVE_AVAILABLE',
       busy_from: initialData?.busy_from ? new Date(initialData.busy_from) : undefined,
       busy_to: initialData?.busy_to ? new Date(initialData.busy_to) : undefined,
+      position_id: initialData?.position?.id || undefined,
+      // Inicjalizacja tablicy technologii
+      technologyIds: defaultTechIds,
     },
   });
 
   async function onSubmit(values: EmployeeFormValues) {
     startTransition(async () => {
       const formData = new FormData();
-      // Iterating over values to append them to FormData
+
+      // Specjalna obsługa tablic i dat przy konwersji na FormData
       Object.entries(values).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          if (value instanceof Date) {
+          if (key === 'technologyIds' && Array.isArray(value)) {
+            // Serwer oczekuje klucza 'technology_ids' (snake_case)
+            // Dodajemy każdy ID jako osobny wpis w FormData
+            value.forEach((id) => {
+              formData.append('technology_ids', id.toString());
+            });
+          } else if (value instanceof Date) {
             formData.append(key, value.toISOString());
           } else {
             formData.append(key, value as string);
@@ -74,14 +97,12 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
       });
 
       let result;
-      // Determining whether to update or create based on ID existence
       if (initialData?.id) {
         result = await updateEmployee(initialData.id, formData);
       } else {
         result = await createEmployee(formData);
       }
 
-      // Handling response and feedback
       if (result.ok) {
         toast.success(initialData ? 'Zapisano zmiany' : 'Dodano pracownika');
         router.refresh();
@@ -92,7 +113,6 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
     });
   }
 
-  // Helper function to format Date to YYYY-MM-DD string
   const dateToIso = (date?: Date | null) => {
     if (!date) return '';
     return date.toISOString().split('T')[0];
@@ -101,9 +121,8 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
-        {/* Main container with visual grouping */}
         <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-5 space-y-6">
-          {/* Personal details section */}
+          {/* Dane personalne */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
               <User size={14} className="text-blue-500" />
@@ -150,7 +169,119 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
             </div>
           </div>
 
-          {/* Status and availability section */}
+          {/* Technologie - Nowa sekcja */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
+              <Cpu size={14} className="text-purple-500" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                Kompetencje
+              </span>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="technologyIds"
+              render={({ field }) => {
+                const selectedIds = (field.value as number[]) || [];
+
+                return (
+                  <FormItem className="flex flex-col">
+                    <FormLabel className="text-xs text-slate-500">Znane technologie</FormLabel>
+                    <div className="flex flex-wrap items-center gap-2 min-h-[38px] rounded-md border border-slate-800 bg-slate-950 px-3 py-2">
+                      {selectedIds.length > 0 ? (
+                        selectedIds.map((techId) => {
+                          const tech = allTechnologies.find((t) => t.id === techId);
+                          if (!tech) return null;
+                          return (
+                            <Badge
+                              key={tech.id}
+                              variant="outline"
+                              className={`group pr-5 pl-2 py-0.5 border ${getColorForTechnology(
+                                tech.name,
+                              )} relative`}
+                            >
+                              {tech.name}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newIds = selectedIds.filter((id) => id !== tech.id);
+                                  field.onChange(newIds);
+                                }}
+                                className="absolute right-1 top-1/2 -translate-y-1/2 opacity-60 group-hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/20 rounded-full p-0.5 transition-all"
+                              >
+                                <X size={10} />
+                              </button>
+                            </Badge>
+                          );
+                        })
+                      ) : (
+                        <span className="text-sm text-slate-500">Brak wybranych technologii</span>
+                      )}
+
+                      <Popover open={techOpen} onOpenChange={setTechOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            className="h-6 w-6 rounded-full border border-dashed border-slate-600 text-slate-400 hover:text-white hover:border-slate-400 p-0 ml-1"
+                          >
+                            <Plus size={12} />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="p-0 w-[240px] border-slate-800 bg-[#0B1121]"
+                          align="start"
+                        >
+                          <Command className="bg-transparent">
+                            <CommandInput
+                              placeholder="Szukaj technologii..."
+                              className="h-9 text-xs text-white"
+                            />
+                            <CommandList>
+                              <CommandEmpty className="py-2 text-xs text-center text-slate-500">
+                                Brak wyników.
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {allTechnologies.map((tech) => {
+                                  const isSelected = selectedIds.includes(tech.id);
+                                  return (
+                                    <CommandItem
+                                      key={tech.id}
+                                      value={tech.name}
+                                      onSelect={() => {
+                                        if (isSelected) {
+                                          field.onChange(
+                                            selectedIds.filter((id) => id !== tech.id),
+                                          );
+                                        } else {
+                                          field.onChange([...selectedIds, tech.id]);
+                                        }
+                                        // Nie zamykamy, aby można było wybrać wiele
+                                      }}
+                                      className="cursor-pointer text-xs text-slate-300 aria-selected:bg-slate-800 aria-selected:text-white flex justify-between"
+                                    >
+                                      {tech.name}
+                                      {isSelected && (
+                                        <Check size={12} className="text-emerald-500" />
+                                      )}
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+          </div>
+
+          {/* Dostępność - bez zmian */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
               <Briefcase size={14} className="text-amber-500" />
@@ -196,7 +327,6 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
             />
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Start date input with calendar popover */}
               <FormField
                 control={form.control}
                 name="busy_from"
@@ -215,12 +345,12 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
                           className="bg-slate-950 border-slate-800 text-white block focus:border-blue-500/50 h-9 pr-10 [&::-webkit-calendar-picker-indicator]:hidden dark:[color-scheme:dark]"
                         />
                       </FormControl>
-
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
+                            type="button"
                             className="absolute right-0 top-0 h-9 w-9 text-slate-400 hover:text-white hover:bg-slate-800"
                           >
                             <CalendarIcon size={14} />
@@ -246,7 +376,6 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
                 )}
               />
 
-              {/* End date input with calendar popover */}
               <FormField
                 control={form.control}
                 name="busy_to"
@@ -265,12 +394,12 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
                           className="bg-slate-950 border-slate-800 text-white block focus:border-blue-500/50 h-9 pr-10 [&::-webkit-calendar-picker-indicator]:hidden dark:[color-scheme:dark]"
                         />
                       </FormControl>
-
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
+                            type="button"
                             className="absolute right-0 top-0 h-9 w-9 text-slate-400 hover:text-white hover:bg-slate-800"
                           >
                             <CalendarIcon size={14} />
@@ -299,7 +428,6 @@ export function EmployeeForm({ initialData, onSuccess }: EmployeeFormProps) {
           </div>
         </div>
 
-        {/* Footer with submit button */}
         <div className="pt-2">
           <Button
             type="submit"

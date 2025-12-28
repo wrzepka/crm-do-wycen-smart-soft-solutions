@@ -21,11 +21,13 @@ function parseFormData(input: FormData | Record<string, unknown>) {
   const formData = input;
   const data: Record<string, unknown> = {};
   const technologyIds: number[] = [];
-  let positionId: number | null = null;
+  // Zmieniamy domyślną wartość na undefined, aby odróżnić "brak zmiany" od "ustaw na null"
+  let positionId: number | null | undefined = undefined;
 
   // Iterate through FormData entries
   for (const [key, value] of formData.entries()) {
-    // Handle technology_ids (can be array with brackets)
+    // Handle technology_ids (can be array with brackets or repeated keys)
+    // FIX: getting key no matter the format
     if (key === 'technology_ids' || key.startsWith('technology_ids[')) {
       const numValue = Number(value);
       if (!isNaN(numValue) && numValue > 0) {
@@ -110,10 +112,16 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
       payload.position_id = positionId;
     }
 
+    // FIX: assogm technologyIds to payload for validation
+    if (technologyIds && technologyIds.length > 0) {
+      payload.technologyIds = technologyIds;
+    }
+
     // Validate employee data
     const validationResult = newEmployeeSchema.safeParse(payload);
     if (!validationResult.success) {
       const errors = validationResult.error.flatten();
+      console.error('Create Employee Validation Error:', errors);
       return {
         ok: false,
         error: 'Błędy walidacji formularza',
@@ -135,9 +143,10 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
         status: validData.status,
       };
 
-      // Set position relation if defined
-      if (validData.position_id !== undefined) {
-        createData.position = createPositionRelation(validData.position_id);
+      // FIX: Set position relation ONLY if we have a valid ID.
+      // Dont use createPositionRelation here, it will return { disconnect: true },
+      if (validData.position_id) {
+        createData.position = { connect: { id: validData.position_id } };
       }
 
       // Create employee
@@ -208,6 +217,11 @@ export async function updateEmployee(
       payload.busy_to = convertDateField(payload.busy_to);
     }
 
+    // FIX: assign technologyIds to payload for validation
+    if (technologyIds !== undefined) {
+      payload.technologyIds = technologyIds;
+    }
+
     // Validate employee data with ID
     const dataWithId = { ...payload, id: parsedId };
     const validationResult = updateEmployeeSchema.safeParse(dataWithId);
@@ -246,15 +260,17 @@ export async function updateEmployee(
       if (validData.status !== undefined) updateData.status = validData.status;
 
       // Handle position update
-      if (hasPositionUpdate && positionId !== null && positionId !== undefined) {
-        // Check if exits
-        const positionExists = await tx.positions.findUnique({
-          where: { id: positionId },
-          select: { id: true },
-        });
+      if (hasPositionUpdate) {
+        // Check if exists (only if connecting)
+        if (positionId) {
+          const positionExists = await tx.positions.findUnique({
+            where: { id: positionId },
+            select: { id: true },
+          });
 
-        if (!positionExists) {
-          throw new Error('Wybrana pozycja nie istnieje w systemie');
+          if (!positionExists) {
+            throw new Error('Wybrana pozycja nie istnieje w systemie');
+          }
         }
         updateData.position = createPositionRelation(positionId);
       }
@@ -262,7 +278,8 @@ export async function updateEmployee(
       const hasEmployeeUpdates = Object.keys(updateData).length > 0;
 
       if (!hasEmployeeUpdates && !hasTechnologyUpdates) {
-        throw new Error('Nie podano żadnych pól do aktualizacji');
+        // Brak zmian to nie błąd, po prostu nic nie robimy
+        return;
       }
 
       // Update employee data if changed
