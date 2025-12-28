@@ -289,34 +289,6 @@ export async function updateClient(id: number | string, input: FormData | Record
     return { ok: false, error: message };
   }
 }
-
-export async function getClientWithAddress(id: number | string) {
-  try {
-    const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
-    if (Number.isNaN(parsedId)) throw new Error('Nieprawidłowe ID klienta');
-
-    const client = await prisma.clients.findUnique({
-      where: { id: parsedId },
-      include: {
-        client_addresses: true,
-      },
-    });
-
-    if (!client) {
-      return {
-        ok: false,
-        error: 'Klient nie istnieje',
-      };
-    }
-
-    return { ok: true, data: client };
-  } catch (err: unknown) {
-    console.error('Get client error:', err);
-    const message = err instanceof Error ? err.message : 'Błąd podczas pobierania danych klienta';
-    return { ok: false, error: message };
-  }
-}
-
 export async function deleteClient(id: number | string) {
   try {
     const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
