@@ -1,4 +1,4 @@
-'use-client';
+'use client';
 
 import { useState } from 'react';
 import {
@@ -10,32 +10,36 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ClientWithRelations } from '@/types/client';
-import { ClientDetails } from '@/components/dashboard/clients/client-details';
+import { ClientForm } from './client-form';
 
 interface ClientSheetProps {
-  client: ClientWithRelations;
+  client?: ClientWithRelations;
   children: React.ReactNode;
 }
 
-// Simple data view. To change in future to handle edit, create
 export function ClientSheet({ client, children }: ClientSheetProps) {
   const [open, setOpen] = useState(false);
+  const isEdit = !!client;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
 
-      <SheetContent className="bg-[#0B1121] border-l border-slate-800 text-white sm:max-w-md pl-1">
+      <SheetContent className="bg-[#0B1121] border-l border-slate-800 text-white sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="text-white text-xl font-bold">
-            {client.is_lead ? 'Szczegóły leada' : 'Szczegóły klienta'}
+            {isEdit ? 'Edytuj klienta' : 'Nowy klient'}
           </SheetTitle>
           <SheetDescription className="text-slate-400">
-            Pełny podgląd informacji o {client.is_lead ? 'leadzie' : 'kliencie'} w systemie CRM.
+            {isEdit
+              ? 'Zaktualizuj dane klienta lub leada.'
+              : 'Wprowadź dane, aby dodać nową firmę do bazy.'}
           </SheetDescription>
         </SheetHeader>
 
-        <ClientDetails client={client} />
+        <div className="mt-8">
+          <ClientForm initialData={client} onSuccess={() => setOpen(false)} />
+        </div>
       </SheetContent>
     </Sheet>
   );

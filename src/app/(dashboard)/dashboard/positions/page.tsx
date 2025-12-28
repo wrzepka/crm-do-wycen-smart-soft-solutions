@@ -3,7 +3,6 @@ import { PositionListTable } from '@/components/shared/PositionListTable';
 import { PositionSheet } from '@/components/dashboard/positions/position-sheet';
 
 export default async function PositionsPage() {
-  // 1. Pobieramy prawdziwe dane z bazy
   const positionsData = await getPositionsList();
 
   return (
@@ -18,11 +17,9 @@ export default async function PositionsPage() {
           </p>
         </div>
 
-        {/* 2. Przycisk dodawania */}
         <PositionSheet />
       </div>
 
-      {/* 3. Tabela z danymi */}
       <PositionListTable data={positionsData} />
     </div>
   );

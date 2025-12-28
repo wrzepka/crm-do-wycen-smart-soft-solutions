@@ -18,7 +18,6 @@ import { toast } from 'sonner';
 import { Loader2, Briefcase } from 'lucide-react';
 import { positions } from '@/generated/prisma/client';
 import { newPositionSchema, type NewPositionInput } from '@/lib/schemas/positionSchema';
-// POPRAWKA: Importujemy obie akcje
 import { createPosition, updatePosition } from '@/lib/actions/position-actions';
 
 interface PositionFormProps {

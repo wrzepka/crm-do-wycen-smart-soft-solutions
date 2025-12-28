@@ -60,6 +60,7 @@ export function EmployeeForm({
   const [isPending, startTransition] = useTransition();
   const [techOpen, setTechOpen] = useState(false);
 
+  // map initial technologies to array of ids
   const defaultTechIds = initialData?.employee_technology?.map((et) => et.technology_id) || [];
 
   const form = useForm<EmployeeFormValues>({
@@ -81,9 +82,11 @@ export function EmployeeForm({
     startTransition(async () => {
       const formData = new FormData();
 
+      // flatten values to formdata for server action compatibility
       Object.entries(values).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (key === 'technologyIds' && Array.isArray(value)) {
+            // handle technology array by appending multiple entries
             value.forEach((id) => {
               formData.append('technology_ids', id.toString());
             });
@@ -121,6 +124,7 @@ export function EmployeeForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
         <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-5 space-y-6">
+          {/* personal details section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
               <User size={14} className="text-blue-500" />
@@ -200,6 +204,7 @@ export function EmployeeForm({
             />
           </div>
 
+          {/* technologies section */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
               <Cpu size={14} className="text-purple-500" />
@@ -310,6 +315,7 @@ export function EmployeeForm({
             />
           </div>
 
+          {/* availability and dates section */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
               <Briefcase size={14} className="text-amber-500" />
