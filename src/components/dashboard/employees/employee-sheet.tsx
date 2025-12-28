@@ -17,11 +17,16 @@ import { EmployeeWithRelations } from '@/types/employee';
 interface EmployeeSheetProps {
   employee?: EmployeeWithRelations;
   children?: React.ReactNode;
-  // Dodajemy prop
   allTechnologies: { id: number; name: string }[];
+  allPositions: { id: number; name: string }[];
 }
 
-export function EmployeeSheet({ employee, children, allTechnologies }: EmployeeSheetProps) {
+export function EmployeeSheet({
+  employee,
+  children,
+  allTechnologies,
+  allPositions,
+}: EmployeeSheetProps) {
   const [open, setOpen] = useState(false);
   const isEdit = !!employee;
 
@@ -54,6 +59,7 @@ export function EmployeeSheet({ employee, children, allTechnologies }: EmployeeS
           <EmployeeForm
             initialData={employee}
             allTechnologies={allTechnologies}
+            allPositions={allPositions}
             onSuccess={() => setOpen(false)}
           />
         </div>

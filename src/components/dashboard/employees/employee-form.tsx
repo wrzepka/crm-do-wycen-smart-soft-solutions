@@ -46,17 +46,20 @@ type EmployeeFormValues = z.input<typeof newEmployeeSchema>;
 interface EmployeeFormProps {
   initialData?: EmployeeWithRelations | null;
   onSuccess?: () => void;
-  // Nowy prop - lista dostępnych technologii
   allTechnologies: { id: number; name: string }[];
+  allPositions: { id: number; name: string }[];
 }
 
-export function EmployeeForm({ initialData, onSuccess, allTechnologies }: EmployeeFormProps) {
+export function EmployeeForm({
+  initialData,
+  onSuccess,
+  allTechnologies,
+  allPositions,
+}: EmployeeFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  // Stan dla popovera technologii
   const [techOpen, setTechOpen] = useState(false);
 
-  // Pobranie początkowych ID technologii z relacji, jeśli edytujemy
   const defaultTechIds = initialData?.employee_technology?.map((et) => et.technology_id) || [];
 
   const form = useForm<EmployeeFormValues>({
@@ -70,7 +73,6 @@ export function EmployeeForm({ initialData, onSuccess, allTechnologies }: Employ
       busy_from: initialData?.busy_from ? new Date(initialData.busy_from) : undefined,
       busy_to: initialData?.busy_to ? new Date(initialData.busy_to) : undefined,
       position_id: initialData?.position?.id || undefined,
-      // Inicjalizacja tablicy technologii
       technologyIds: defaultTechIds,
     },
   });
@@ -79,12 +81,9 @@ export function EmployeeForm({ initialData, onSuccess, allTechnologies }: Employ
     startTransition(async () => {
       const formData = new FormData();
 
-      // Specjalna obsługa tablic i dat przy konwersji na FormData
       Object.entries(values).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (key === 'technologyIds' && Array.isArray(value)) {
-            // Serwer oczekuje klucza 'technology_ids' (snake_case)
-            // Dodajemy każdy ID jako osobny wpis w FormData
             value.forEach((id) => {
               formData.append('technology_ids', id.toString());
             });
@@ -122,7 +121,6 @@ export function EmployeeForm({ initialData, onSuccess, allTechnologies }: Employ
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
         <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-5 space-y-6">
-          {/* Dane personalne */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
               <User size={14} className="text-blue-500" />
@@ -167,9 +165,41 @@ export function EmployeeForm({ initialData, onSuccess, allTechnologies }: Employ
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="position_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-slate-500">Stanowisko</FormLabel>
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
+                    value={field.value ? field.value.toString() : undefined}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="bg-slate-950 border-slate-800 text-white h-9 focus:ring-0 focus:border-blue-500/50">
+                        <SelectValue placeholder="Wybierz stanowisko" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-[#0B1121] border-slate-800 text-slate-200">
+                      {allPositions.map((position) => (
+                        <SelectItem key={position.id} value={position.id.toString()}>
+                          {position.name}
+                        </SelectItem>
+                      ))}
+                      {allPositions.length === 0 && (
+                        <div className="p-2 text-xs text-slate-500 text-center">
+                          Brak zdefiniowanych stanowisk
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
-          {/* Technologie - Nowa sekcja */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
               <Cpu size={14} className="text-purple-500" />
@@ -257,7 +287,6 @@ export function EmployeeForm({ initialData, onSuccess, allTechnologies }: Employ
                                         } else {
                                           field.onChange([...selectedIds, tech.id]);
                                         }
-                                        // Nie zamykamy, aby można było wybrać wiele
                                       }}
                                       className="cursor-pointer text-xs text-slate-300 aria-selected:bg-slate-800 aria-selected:text-white flex justify-between"
                                     >
@@ -281,7 +310,6 @@ export function EmployeeForm({ initialData, onSuccess, allTechnologies }: Employ
             />
           </div>
 
-          {/* Dostępność - bez zmian */}
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-2 text-slate-400 mb-2 border-b border-slate-800 pb-2">
               <Briefcase size={14} className="text-amber-500" />
