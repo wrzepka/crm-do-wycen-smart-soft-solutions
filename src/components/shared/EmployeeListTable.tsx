@@ -1,4 +1,4 @@
-'use client'; // Marking this as a Client Component to allow state and interactivity
+'use client';
 
 import {
   Table,
@@ -16,16 +16,23 @@ import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { EmployeeTechnologiesCell } from '@/components/dashboard/employees/employee-technologies-cell';
 
-// Defining props interface to ensure type safety for employee data input
 interface Props {
   data: EmployeeWithRelations[];
-  // adding all technologies from page.tsx
   allTechnologies: { id: number; name: string }[];
+  allPositions: { id: number; name: string }[];
 }
 
-export function EmployeeListTable({ data, allTechnologies }: Props) {
-  // State to manage the search input value visual state
+export function EmployeeListTable({ data, allTechnologies, allPositions }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
+
+  //testing filtering logic
+  const filteredData = data.filter((employee) => {
+    const search = searchTerm.toLowerCase();
+    const fullName = `${employee.first_name} ${employee.last_name}`.toLowerCase();
+    const positionName = employee.position?.name?.toLowerCase() || '';
+
+    return fullName.includes(search) || positionName.includes(search);
+  });
 
   return (
     <div className="space-y-4">
@@ -42,7 +49,7 @@ export function EmployeeListTable({ data, allTechnologies }: Props) {
         </div>
         <div className="text-sm text-slate-500">
           Wyświetlono:{' '}
-          <span className="font-medium text-slate-900 dark:text-white">{data.length}</span>
+          <span className="font-medium text-slate-900 dark:text-white">{filteredData.length}</span>
         </div>
       </div>
 
@@ -58,16 +65,14 @@ export function EmployeeListTable({ data, allTechnologies }: Props) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* Conditional rendering: Show message if no results found, otherwise list employees */}
-            {data.length === 0 ? (
+            {filteredData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
-                  Brak pracowników w bazie danych
+                  Brak pracowników spełniających kryteria
                 </TableCell>
               </TableRow>
             ) : (
-              // Mapping directly over raw data without client-side filtering
-              data.map((employee) => (
+              filteredData.map((employee) => (
                 <TableRow
                   key={employee.id}
                   className="border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
@@ -77,17 +82,15 @@ export function EmployeeListTable({ data, allTechnologies }: Props) {
                       <span className="font-medium text-slate-900 dark:text-white text-base">
                         {employee.first_name} {employee.last_name}
                       </span>
-                      {employee.position != null && (
-                        <span className="text-xs text-slate-500">{employee.position.name}</span>
-                      )}
+                      <span className="text-xs text-slate-500 font-normal mt-0.5">
+                        {employee.position?.name || 'Brak stanowiska'}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1.5">
-                      {/* Using helper component to render styled status badge */}
                       <StatusBadge status={employee.status} />
 
-                      {/* Display date range only for booked employees or those on leave */}
                       {(employee.status === 'ACTIVE_BOOKED' || employee.status === 'ON_LEAVE') && (
                         <span className="text-[11px] text-slate-400 font-mono">
                           {employee.busy_from
@@ -111,8 +114,11 @@ export function EmployeeListTable({ data, allTechnologies }: Props) {
                   </TableCell>
 
                   <TableCell className="text-right pr-6">
-                    {/* Triggering the edit sheet with the selected employee data */}
-                    <EmployeeSheet employee={employee}>
+                    <EmployeeSheet
+                      employee={employee}
+                      allTechnologies={allTechnologies}
+                      allPositions={allPositions}
+                    >
                       <Button
                         variant="ghost"
                         size="icon"
@@ -132,9 +138,7 @@ export function EmployeeListTable({ data, allTechnologies }: Props) {
   );
 }
 
-// Helper component to render status badges with specific styles and labels
 function StatusBadge({ status }: { status: string }) {
-  // Mapping status keys to Tailwind CSS classes for consistent styling
   const styles = {
     ACTIVE_AVAILABLE:
       'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20',
@@ -148,7 +152,6 @@ function StatusBadge({ status }: { status: string }) {
       'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-900/30',
   };
 
-  // Mapping status keys to human-readable Polish labels
   const labels = {
     ACTIVE_AVAILABLE: 'Dostępny',
     ACTIVE_BOOKED: 'W projekcie',
@@ -157,7 +160,6 @@ function StatusBadge({ status }: { status: string }) {
     TERMINATED: 'Zwolniony',
   };
 
-  // Fallback to default style and status text if key is not found
   const currentStyle = styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700';
   const label = labels[status as keyof typeof labels] || status;
 
@@ -165,7 +167,6 @@ function StatusBadge({ status }: { status: string }) {
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border w-fit ${currentStyle}`}
     >
-      {/* Adding a pulsing dot indicator for available employees */}
       {status === 'ACTIVE_AVAILABLE' && (
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
       )}

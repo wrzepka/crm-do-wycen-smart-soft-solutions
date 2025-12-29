@@ -23,3 +23,9 @@ export const positionSelectionSchema = z.object({
 export const deletePositionSchema = z.object({
   id: z.number().int().positive(),
 });
+
+export type PositionBase = z.infer<typeof positionBaseSchema>;
+export type NewPositionInput = z.infer<typeof newPositionSchema>;
+export type UpdatePositionInput = z.infer<typeof updatePositionSchema>;
+export type PositionSelection = z.infer<typeof positionSelectionSchema>;
+export type DeletePositionInput = z.infer<typeof deletePositionSchema>;

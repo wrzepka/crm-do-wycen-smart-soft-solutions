@@ -11,6 +11,8 @@ import {
 import { positions } from '@/generated/prisma/client';
 import { Button } from '@/components/ui/button';
 import { Edit2 } from 'lucide-react';
+// POPRAWKA: Importujemy PositionSheet
+import { PositionSheet } from '@/components/dashboard/positions/position-sheet';
 
 interface Props {
   data: positions[];
@@ -28,10 +30,9 @@ export function PositionListTable({ data }: Props) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {/* Conditional rendering: Show message if no results found, otherwise list positions */}
           {data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+              <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
                 Brak stanowisk w bazie danych.
               </TableCell>
             </TableRow>
@@ -49,20 +50,22 @@ export function PositionListTable({ data }: Props) {
                 <TableCell>
                   <div className="flex flex-col gap-1.5">
                     <span className="text-slate-400 font-mono">
-                      {/*TODO:  TO CHANGE IN THE FUTURE. NOW IT IS HARD-CODED*/}
+                      {/* HARDCODED 10 PLN zgodnie z życzeniem */}
                       10 [zł/h]
                     </span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right pr-6">
-                  {/*TODO: ADD FUNCTIONALITY*/}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer"
-                  >
-                    <Edit2 size={15} />
-                  </Button>
+                  {/* POPRAWKA: Button opakowany w PositionSheet */}
+                  <PositionSheet position={position}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer"
+                    >
+                      <Edit2 size={15} />
+                    </Button>
+                  </PositionSheet>
                 </TableCell>
               </TableRow>
             ))
