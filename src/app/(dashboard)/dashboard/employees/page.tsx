@@ -4,20 +4,23 @@ import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAllTechnologies } from '@/lib/actions/technology-actions';
+import { getPositionsList } from '@/lib/data/position';
 
 export default async function EmployeesPage() {
-  const [employeesData, stats, technologiesResult] = await Promise.all([
+  const [employeesData, stats, technologiesResult, positionsData] = await Promise.all([
     getEmployeesList(),
     getEmployeeStats(),
     getAllTechnologies(),
+    getPositionsList(),
   ]);
 
   const allTechnologies =
     technologiesResult.ok && technologiesResult.data ? technologiesResult.data : [];
 
+  const allPositions = positionsData;
+
   return (
     <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">
-      {/* Page header section with title and add employee button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -27,7 +30,7 @@ export default async function EmployeesPage() {
             Zarządzaj dostępnością i alokacją Twoich specjalistów.
           </p>
         </div>
-        <EmployeeSheet />
+        <EmployeeSheet allTechnologies={allTechnologies} allPositions={allPositions} />
       </div>
 
       {/* Grid layout for displaying key performance indicator cards */}
@@ -63,7 +66,11 @@ export default async function EmployeesPage() {
       </div>
 
       {/* Interactive table component displaying the list of employees */}
-      <EmployeeListTable data={employeesData} allTechnologies={allTechnologies} />
+      <EmployeeListTable
+        data={employeesData}
+        allTechnologies={allTechnologies}
+        allPositions={allPositions}
+      />
     </div>
   );
 }
