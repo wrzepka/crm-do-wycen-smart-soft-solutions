@@ -34,7 +34,7 @@ export function ClientListTable({ data }: Props) {
         <TableBody>
           {data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+              <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                 Brak klientów/leadów w bazie danych
               </TableCell>
             </TableRow>
