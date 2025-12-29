@@ -60,7 +60,8 @@ export async function createPosition(data: NewPositionInput) {
 export async function updatePosition(id: number, data: UpdatePositionInput) {
   //  TODO: session check with role authorization.
   // zod validation
-  const validation = updatePositionSchema.safeParse(data);
+  // We need to merge data with id to properly pass validation
+  const validation = updatePositionSchema.safeParse({ ...data, id });
   if (!validation.success) {
     const errors = validation.error.flatten();
     return {
