@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 interface SearchProps {
   placeholder?: string;
-  queryKey?: string; // parameter name
+  queryKey?: string; // Parameter name
   resetKeys?: string[]; // Things to clear after searching
 }
 
@@ -31,7 +31,7 @@ export function Search({
     }
 
     // Clear all keys from resetKeys array
-    // e.g. reset pages parameter
+    // e.g. reset page parameter
     resetKeys.forEach((key) => params.delete(key));
 
     // change url without page refreshing
