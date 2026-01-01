@@ -45,13 +45,14 @@ export function FilterSelect({
     // e.g. reset page parameter
     resetKeys.forEach((key) => params.delete(key));
 
-    // change url without page refreshing
+    // Change url without page refreshing
     replace(`${pathname}?${params.toString()}`);
   };
 
   return (
     <div className="flex flex-col gap-1.5">
       {label && <Label>{label}</Label>}
+      {/* Value is used here to ensure sync after clicking reset button (Selected value will be same as value from URL or default one)*/}
       <Select value={currentValue} onValueChange={handleSelect}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder={placeholder} />

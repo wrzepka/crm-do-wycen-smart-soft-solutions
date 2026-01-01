@@ -13,6 +13,7 @@ export default async function ClientsPage({
 }) {
   const { page, query, is_lead } = await searchParams;
   const currentPage = Math.max(1, Number(page) || 1);
+  // Get query and client type(isLead) from URL
   const searchQuery = query || '';
   const isLead = is_lead || undefined;
   const pageSize = 25;

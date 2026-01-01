@@ -22,6 +22,7 @@ export function SearchBar({
   const pathname = usePathname();
   const { replace } = useRouter();
 
+  // Delay execution by 300ms to prevent excessive database queries while typing.
   const handleSearch = useDebouncedCallback((term: string) => {
     const params = new URLSearchParams(searchParams);
     if (term) {
@@ -29,7 +30,12 @@ export function SearchBar({
     } else {
       params.delete(queryKey);
     }
+
+    // Clear all keys from resetKeys array
+    // e.g. reset page parameter
     resetKeys.forEach((key) => params.delete(key));
+
+    // Change url without page refreshing
     replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, 300);
 

@@ -9,7 +9,7 @@ export function ClearFiltersButton() {
   const pathname = usePathname();
   const { replace } = useRouter();
 
-  // if there is no paramaters do not render button component
+  // If there is no parameters do not render button component
   if (searchParams.size === 0) {
     return null;
   }
@@ -18,7 +18,7 @@ export function ClearFiltersButton() {
     <Button
       variant="ghost"
       onClick={() => replace(pathname, { scroll: false })}
-      className="h-9 px-2 text-muted-foreground hover:text-destructive"
+      className="h-9 px-2 text-muted-foreground hover:text-destructive hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer"
     >
       <X className="mr-2 h-4 w-4" />
       Wyczyść filtry
