@@ -1,6 +1,9 @@
+'use client';
+
 import { SearchBar } from '@/components/shared/search-bar';
 import { FilterSelect } from '@/components/shared/filter-select';
 import { ClearFiltersButton } from '@/components/shared/clear-filters-button';
+import { useSearchParams } from 'next/navigation';
 
 const STATUS_OPTIONS = [
   { label: 'Leady', value: 'true' },
@@ -8,10 +11,13 @@ const STATUS_OPTIONS = [
 ];
 
 export function ClientFilters() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('query') || '';
+
   return (
     <div className="flex flex-wrap items-end gap-4 p-4 bg-white border rounded-xl shadow-sm">
-      <div className="flex-1 min-w-[200px]">
-        <SearchBar queryKey="q" placeholder="Szukaj..." />
+      <div className="flex-1">
+        <SearchBar key={query} defaultValue={query} queryKey="query" placeholder="Szukaj..." />
       </div>
 
       <FilterSelect label="Typ" queryKey="is_lead" placeholder="Każdy" options={STATUS_OPTIONS} />
