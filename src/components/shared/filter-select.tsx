@@ -8,8 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 interface FilterSelectProps {
+  label?: string;
   queryKey: string;
   placeholder: string;
   options: { label: string; value: string }[];
@@ -17,6 +19,7 @@ interface FilterSelectProps {
 }
 
 export function FilterSelect({
+  label,
   queryKey,
   placeholder,
   options,
@@ -44,18 +47,21 @@ export function FilterSelect({
   };
 
   return (
-    <Select onValueChange={handleSelect} defaultValue={searchParams.get(queryKey) || 'all'}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">Wszystkie</SelectItem>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="flex flex-col gap-1.5">
+      {label && <Label className="text-xs font-semibold text-muted-foreground ml-1">{label}</Label>}
+      <Select onValueChange={handleSelect} defaultValue={searchParams.get(queryKey) || 'all'}>
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Każdy</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

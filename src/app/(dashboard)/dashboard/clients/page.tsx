@@ -4,7 +4,7 @@ import { ClientSheet } from '@/components/dashboard/clients/client-sheet';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { getClientsList } from '@/lib/data/client';
-import { Search } from '@/components/shared/Search';
+import { ClientFilters } from '@/components/shared/client-filters';
 
 export default async function ClientsPage({
   searchParams,
@@ -38,7 +38,7 @@ export default async function ClientsPage({
         </ClientSheet>
       </div>
 
-      <Search placeholder="Szukaj klientów..." />
+      <ClientFilters></ClientFilters>
 
       <ClientListTable data={clients} />
 

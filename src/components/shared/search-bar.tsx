@@ -11,7 +11,7 @@ interface SearchProps {
   resetKeys?: string[]; // Things to clear after searching
 }
 
-export function Search({
+export function SearchBar({
   placeholder = 'Szukaj...',
   queryKey = 'query',
   resetKeys = ['page'],
