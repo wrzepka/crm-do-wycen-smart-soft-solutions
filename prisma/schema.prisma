@@ -172,6 +172,7 @@ model VerificationToken {
 model positions {
   id        Int         @id @default(autoincrement())
   name      String      @unique @db.VarChar(100)
+  hourly_rate Decimal?    @db.Decimal(10, 2)
   employees employees[]
 }
 

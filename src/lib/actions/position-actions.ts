@@ -26,7 +26,10 @@ export async function createPosition(data: NewPositionInput) {
 
   try {
     const position = await prisma.positions.create({
-      data: validation.data,
+      data: {
+        name: validation.data.name,
+        hourly_rate: validation.data.hourly_rate,
+      },
     });
 
     // reload cache
@@ -74,11 +77,15 @@ export async function updatePosition(id: number, data: UpdatePositionInput) {
   try {
     const position = await prisma.positions.update({
       where: { id: id },
-      data: validation.data,
+      data: {
+        name: validation.data.name,
+        hourly_rate: validation.data.hourly_rate,
+      },
     });
 
     // reload cache
     revalidatePath('/dashboard/positions');
+    revalidatePath('/dashboard/employees'); // can affect costs i think
 
     // return data for future possible implementation e.g. toast
     return {
@@ -120,6 +127,18 @@ export async function deletePosition(id: number) {
   }
 
   try {
+    // check if it are they arranged to a possiton
+    const employeesWithPosition = await prisma.employees.count({
+      where: { position_id: id },
+    });
+
+    if (employeesWithPosition > 0) {
+      return {
+        ok: false,
+        error: `Nie można usunąć stanowiska, ponieważ jest przypisane do ${employeesWithPosition} pracowników. Najpierw zmień ich stanowisko.`,
+      };
+    }
+
     await prisma.positions.delete({
       where: { id: validation.data.id },
     });
