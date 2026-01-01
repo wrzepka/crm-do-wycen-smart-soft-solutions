@@ -17,7 +17,7 @@ export function ClearFiltersButton() {
   return (
     <Button
       variant="ghost"
-      onClick={() => replace(pathname)}
+      onClick={() => replace(pathname, { scroll: false })}
       className="h-9 px-2 text-muted-foreground hover:text-destructive"
     >
       <X className="mr-2 h-4 w-4" />

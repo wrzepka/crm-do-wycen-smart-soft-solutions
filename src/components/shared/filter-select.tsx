@@ -28,6 +28,9 @@ export function FilterSelect({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
+  // Get actual URL values. If it is empty set it to 'all'
+  // It is important for sync with filter form
+  const currentValue = searchParams.get(queryKey) || 'all';
 
   const handleSelect = (selectedValue: string) => {
     const params = new URLSearchParams(searchParams);
@@ -48,8 +51,8 @@ export function FilterSelect({
 
   return (
     <div className="flex flex-col gap-1.5">
-      {label && <Label className="text-xs font-semibold text-muted-foreground ml-1">{label}</Label>}
-      <Select onValueChange={handleSelect} defaultValue={searchParams.get(queryKey) || 'all'}>
+      {label && <Label>{label}</Label>}
+      <Select value={currentValue} onValueChange={handleSelect}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
