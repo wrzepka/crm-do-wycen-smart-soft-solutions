@@ -4,17 +4,19 @@ import { ClientSheet } from '@/components/dashboard/clients/client-sheet';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { getClientsList } from '@/lib/data/client';
+import { Search } from '@/components/shared/Search';
 
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; query?: string }>;
 }) {
-  const { page } = await searchParams;
+  const { page, query } = await searchParams;
   const currentPage = Math.max(1, Number(page) || 1);
-  const pageSize = 10;
+  const searchQuery = query || '';
+  const pageSize = 25;
 
-  const { clients, totalPages } = await getClientsList(currentPage, pageSize);
+  const { clients, totalPages } = await getClientsList(searchQuery, currentPage, pageSize);
 
   return (
     <div className="space-y-6 p-8 bg-slate-50/50 dark:bg-[#020817] min-h-full">
@@ -35,6 +37,8 @@ export default async function ClientsPage({
           </Button>
         </ClientSheet>
       </div>
+
+      <Search placeholder="Szukaj klientów..." />
 
       <ClientListTable data={clients} />
 
