@@ -1,17 +1,30 @@
 import { prisma } from '@/lib/prisma-client';
 
-export async function getClientsList(query: string = '', page: number = 1, pageSize: number = 25) {
+export async function getClientsList(
+  query: string = '',
+  isLead: string | undefined,
+  page: number = 1,
+  pageSize: number = 25,
+) {
   try {
-    // Clause for search query
-    const whereClause = query
-      ? {
-          OR: [
-            { first_name: { contains: query, mode: 'insensitive' as const } },
-            { last_name: { contains: query, mode: 'insensitive' as const } },
-            { email: { contains: query, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    // parse Boolean value for client type filter
+    const isLeadBoolean = isLead === 'true' ? true : isLead === 'false' ? false : undefined;
+
+    // Clause for filters  (search and rest)
+    const whereClause = {
+      AND: [
+        query
+          ? {
+              OR: [
+                { first_name: { contains: query, mode: 'insensitive' as const } },
+                { last_name: { contains: query, mode: 'insensitive' as const } },
+                { email: { contains: query, mode: 'insensitive' as const } },
+              ],
+            }
+          : {},
+        isLeadBoolean !== undefined ? { is_lead: isLeadBoolean } : {},
+      ],
+    };
 
     const skip = (page - 1) * pageSize;
 
