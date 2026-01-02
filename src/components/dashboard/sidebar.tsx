@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useTransition } from 'react';
 import { logoutAction } from '@/lib/actions/logout';
+import { toast } from 'sonner';
 
 interface SidebarLinkProps {
   href: string;
@@ -57,7 +58,11 @@ export function DashboardSidebar() {
   // logout logic with transition hook
   const handleLogout = () => {
     startTransition(async () => {
-      await logoutAction();
+      const result = await logoutAction();
+      // Check if there are any errors
+      if (result?.error) {
+        toast.error(result.error);
+      }
     });
   };
 
