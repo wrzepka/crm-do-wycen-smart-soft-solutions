@@ -31,10 +31,7 @@ export const updatePositionSchema = positionBaseSchema.extend({
   // coerce is changing string into a number.
   // id is here probably redundant, because we are passing id as standalone argument.
   id: z.coerce.number().int().positive({ message: 'ID pozycji musi być dodatnie' }),
-  name: z
-    .string()
-    .min(1, { message: 'Nazwa pozycji nie może być pusta' })
-    .max(100, { message: 'Nazwa pozycji nie może przekraczać 100 znaków' }),
+  // <------- there was duplicated variable name
 });
 
 // Position selection schema (used in employee forms)
