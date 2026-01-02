@@ -13,8 +13,12 @@ import {
   PieChart,
   Layers,
   LucideIcon,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTransition } from 'react';
+import { logoutAction } from '@/lib/actions/logout';
+import { toast } from 'sonner';
 
 interface SidebarLinkProps {
   href: string;
@@ -48,6 +52,20 @@ function SidebarLink({ href, icon: Icon, label }: SidebarLinkProps) {
 }
 
 export function DashboardSidebar() {
+  // transition hook usage
+  const [isPending, startTransition] = useTransition();
+
+  // logout logic with transition hook
+  const handleLogout = () => {
+    startTransition(async () => {
+      const result = await logoutAction();
+      // Check if there are any errors
+      if (result?.error) {
+        toast.error(result.error);
+      }
+    });
+  };
+
   return (
     // Sidebar hidden on mobile, visible on desktop (md:flex)
     <aside className="hidden w-72 flex-col h-full bg-[#0B1121] text-white md:flex flex-shrink-0 relative z-20 border-r border-white/5">
@@ -105,9 +123,13 @@ export function DashboardSidebar() {
       {/* Bottom section (Settings/Logout) */}
       <div className="p-4 border-t border-white/5 bg-[#0B1121]">
         <SidebarLink href="/settings" icon={Settings} label="Ustawienia" />
-        <button className="mt-2 w-full group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all">
-          <LogOut size={18} />
-          Wyloguj się
+        <button
+          onClick={handleLogout}
+          disabled={isPending}
+          className="mt-2 w-full group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+        >
+          {isPending ? <Loader2 size={18} className="animate-spin" /> : <LogOut size={18} />}
+          <span>{isPending ? 'Wylogowywanie...' : 'Wyloguj się'}</span>
         </button>
       </div>
     </aside>

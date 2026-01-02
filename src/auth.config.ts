@@ -4,6 +4,7 @@ import type { Role } from '@/generated/prisma/enums';
 export const authConfig = {
   pages: {
     signIn: '/login',
+    signOut: '/logout',
   },
   callbacks: {
     async jwt({ token, user }) {
