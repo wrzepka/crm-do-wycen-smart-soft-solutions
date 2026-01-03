@@ -155,3 +155,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* src/app/globals.css */
+
+@layer utilities {
+  /* Dedykowany scrollbar dla Sidebara */
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    /* Bardzo cienki */
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    /* Tło paska jest przezroczyste */
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    /* Kolor suwaka (bardzo subtelny) */
+    border-radius: 10px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+    /* Nieco jaśniejszy po najechaniu */
+  }
+
+  /* Wsparcie dla Firefoxa */
+  .sidebar-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+}
