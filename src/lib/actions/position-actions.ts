@@ -2,13 +2,22 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma-client';
-import { Prisma } from '@/generated/prisma/client';
+// POPRAWKA: Importujemy typ 'positions' (model z bazy) aby uniknąć 'any'
+import { Prisma, type positions } from '@/generated/prisma/client';
 import {
   deletePositionSchema,
   newPositionSchema,
   updatePositionSchema,
 } from '@/lib/schemas/positionSchema';
 import { NewPositionInput, UpdatePositionInput } from '@/types/position';
+
+// helper function to convert decimal to number to avoid next.js serialization error
+function serializePosition(position: positions) {
+  return {
+    ...position,
+    hourly_rate: position.hourly_rate ? position.hourly_rate.toNumber() : null,
+  };
+}
 
 export async function createPosition(data: NewPositionInput) {
   //  TODO: session check with role authorization.
@@ -26,16 +35,19 @@ export async function createPosition(data: NewPositionInput) {
 
   try {
     const position = await prisma.positions.create({
-      data: validation.data,
+      data: {
+        name: validation.data.name,
+        hourly_rate: validation.data.hourly_rate,
+      },
     });
 
     // reload cache
     revalidatePath('/dashboard/positions');
 
-    // return data for future possible implementation e.g. toasts
+    // return serialized data (decimal -> number)
     return {
       ok: true,
-      data: position,
+      data: serializePosition(position),
     };
   } catch (error) {
     console.error('Create position error:', error);
@@ -60,7 +72,8 @@ export async function createPosition(data: NewPositionInput) {
 export async function updatePosition(id: number, data: UpdatePositionInput) {
   //  TODO: session check with role authorization.
   // zod validation
-  const validation = updatePositionSchema.safeParse(data);
+  // We need to merge data with id to properly pass validation
+  const validation = updatePositionSchema.safeParse({ ...data, id });
   if (!validation.success) {
     const errors = validation.error.flatten();
     return {
@@ -74,16 +87,20 @@ export async function updatePosition(id: number, data: UpdatePositionInput) {
   try {
     const position = await prisma.positions.update({
       where: { id: id },
-      data: validation.data,
+      data: {
+        name: validation.data.name,
+        hourly_rate: validation.data.hourly_rate,
+      },
     });
 
     // reload cache
     revalidatePath('/dashboard/positions');
+    revalidatePath('/dashboard/employees'); // can affect costs i think
 
-    // return data for future possible implementation e.g. toast
+    // return serialized data (decimal -> number)
     return {
       ok: true,
-      data: position,
+      data: serializePosition(position),
     };
   } catch (error) {
     console.error('Update position error:', error);
@@ -120,6 +137,18 @@ export async function deletePosition(id: number) {
   }
 
   try {
+    // check if it are they arranged to a possiton
+    const employeesWithPosition = await prisma.employees.count({
+      where: { position_id: id },
+    });
+
+    if (employeesWithPosition > 0) {
+      return {
+        ok: false,
+        error: `Nie można usunąć stanowiska, ponieważ jest przypisane do ${employeesWithPosition} pracowników. Najpierw zmień ich stanowisko.`,
+      };
+    }
+
     await prisma.positions.delete({
       where: { id: validation.data.id },
     });

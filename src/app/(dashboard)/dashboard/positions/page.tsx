@@ -3,7 +3,14 @@ import { PositionListTable } from '@/components/shared/PositionListTable';
 import { PositionSheet } from '@/components/dashboard/positions/position-sheet';
 
 export default async function PositionsPage() {
-  const positionsData = await getPositionsList();
+  // fetch raw data directly from backend (hourly_rate is decimal)
+  const rawPositions = await getPositionsList();
+
+  // transformation: converting decimal to number so next.js can send data to client
+  const formattedPositions = rawPositions.map((pos) => ({
+    ...pos,
+    hourly_rate: pos.hourly_rate ? pos.hourly_rate.toNumber() : null,
+  }));
 
   return (
     <div className="space-y-6 p-8 bg-slate-50/50 dark:bg-[#020817] min-h-full">
@@ -20,7 +27,8 @@ export default async function PositionsPage() {
         <PositionSheet />
       </div>
 
-      <PositionListTable data={positionsData} />
+      {/* passing processed data (with number instead of decimal) */}
+      <PositionListTable data={formattedPositions} />
     </div>
   );
 }

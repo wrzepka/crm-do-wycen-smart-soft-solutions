@@ -4,6 +4,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
+import { Loader2, Briefcase, Banknote } from 'lucide-react';
+import { z } from 'zod';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,11 +18,17 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { toast } from 'sonner';
-import { Loader2, Briefcase } from 'lucide-react';
+
+// importing new custom number input component
+import { NumberInput } from '@/components/ui/number-input';
+
 import { positions } from '@/generated/prisma/client';
-import { newPositionSchema, type NewPositionInput } from '@/lib/schemas/positionSchema';
+import { newPositionSchema } from '@/lib/schemas/positionSchema';
+import type { NewPositionInput } from '@/types/position';
 import { createPosition, updatePosition } from '@/lib/actions/position-actions';
+
+// type definition derived from zod schema
+type PositionFormValues = z.input<typeof newPositionSchema>;
 
 interface PositionFormProps {
   initialData?: positions | null;
@@ -29,28 +39,30 @@ export function PositionForm({ initialData, onSuccess }: PositionFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<NewPositionInput>({
+  // initializing form with default values or initial data from database
+  const form = useForm<PositionFormValues>({
     resolver: zodResolver(newPositionSchema),
     defaultValues: {
       name: initialData?.name || '',
+      hourly_rate: initialData?.hourly_rate ? String(initialData.hourly_rate) : '',
     },
   });
 
-  async function onSubmit(values: NewPositionInput) {
+  async function onSubmit(values: PositionFormValues) {
     startTransition(async () => {
-      let result;
+      // casting values to match backend input type expectations
+      const baseData = values as unknown as NewPositionInput;
 
-      if (initialData?.id) {
-        // POPRAWKA: Wywołujemy updatePosition zamiast toasta
-        result = await updatePosition(initialData.id, values);
-      } else {
-        result = await createPosition(values);
-      }
+      // determining whether to update existing record or create new one based on initial data
+      const result = initialData?.id
+        ? await updatePosition(initialData.id, { ...baseData, id: initialData.id })
+        : await createPosition(baseData);
 
+      // handling response and refreshing server data
       if (result.ok) {
         toast.success(initialData ? 'Zaktualizowano stanowisko' : 'Dodano stanowisko');
         router.refresh();
-        if (onSuccess) onSuccess();
+        onSuccess?.();
       } else if (result.error) {
         toast.error(result.error);
       }
@@ -79,7 +91,31 @@ export function PositionForm({ initialData, onSuccess }: PositionFormProps) {
                     <Input
                       placeholder="np. Senior Developer"
                       {...field}
-                      className="bg-slate-950 border-slate-800 focus:border-blue-500/50 text-sm h-9 text-white"
+                      className="bg-slate-950 border-slate-800 focus:border-blue-500/50 text-sm h-9 text-white transition-colors"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="hourly_rate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-slate-500 flex items-center gap-1">
+                    <Banknote size={14} className="text-slate-400" />
+                    Stawka godzinowa (PLN)
+                  </FormLabel>
+                  <FormControl>
+                    {/* using new custom number input component */}
+                    <NumberInput
+                      placeholder="0.00"
+                      step={0.01}
+                      min={0}
+                      // passing react hook form props directly (value, onChange, ref, onBlur etc)
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -93,7 +129,7 @@ export function PositionForm({ initialData, onSuccess }: PositionFormProps) {
           <Button
             type="submit"
             disabled={isPending}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 text-sm font-medium shadow-md shadow-blue-900/10 transition-all"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 text-sm font-medium shadow-md shadow-blue-900/10 transition-all hover:shadow-blue-900/20"
           >
             {isPending ? (
               <>
