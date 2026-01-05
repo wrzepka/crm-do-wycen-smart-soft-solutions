@@ -1,5 +1,5 @@
 import { getEmployeesList, getEmployeeStats } from '@/lib/data/employee';
-import { EmployeeListTable } from '@/components/shared/EmployeeListTable';
+import { EmployeeListTable } from '@/components/dashboard/employees/employee-list-table';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma-client';
-import { TechnologyListTable } from '@/components/shared/TechnologyListTable';
+import { TechnologyListTable } from '@/components/dashboard/technologies/technology-list-table';
 import { TechnologySheet } from '@/components/dashboard/technologies/technology-sheet';
 
 export default async function TechnologiesPage() {
