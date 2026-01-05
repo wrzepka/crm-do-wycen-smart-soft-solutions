@@ -38,13 +38,13 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { Loader2, User, Briefcase, CalendarIcon, Cpu, Plus, X, Check } from 'lucide-react';
 import { pl } from 'date-fns/locale';
-import { EmployeeWithRelations } from '@/types/employee';
+import { SafeEmployee } from '@/types/employee';
 import { getColorForTechnology } from '@/lib/utils';
 
 type EmployeeFormValues = z.input<typeof newEmployeeSchema>;
 
 interface EmployeeFormProps {
-  initialData?: EmployeeWithRelations | null;
+  initialData?: SafeEmployee | null;
   onSuccess?: () => void;
   allTechnologies: { id: number; name: string }[];
   allPositions: { id: number; name: string }[];
@@ -61,7 +61,7 @@ export function EmployeeForm({
   const [techOpen, setTechOpen] = useState(false);
 
   // map initial technologies to array of ids
-  const defaultTechIds = initialData?.employee_technology?.map((et) => et.technology_id) || [];
+  const defaultTechIds = initialData?.employee_technology?.map((et) => et.technologies.id) || [];
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(newEmployeeSchema),

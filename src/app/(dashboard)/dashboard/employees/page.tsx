@@ -1,23 +1,21 @@
-import { getEmployeesList, getEmployeeStats } from '@/lib/data/employee';
+import { getSafeEmployees, getEmployeeStats } from '@/lib/data/employee';
 import { EmployeeListTable } from '@/components/dashboard/employees/employee-list-table';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAllTechnologies } from '@/lib/data/technology';
-import { getPositionsList } from '@/lib/data/position';
+import { getPositionsOptions } from '@/lib/data/position';
 
 export default async function EmployeesPage() {
-  const [employeesData, stats, technologiesResult, positionsData] = await Promise.all([
-    getEmployeesList(),
+  const [employees, stats, technologiesResult, positions] = await Promise.all([
+    getSafeEmployees(),
     getEmployeeStats(),
     getAllTechnologies(),
-    getPositionsList(),
+    getPositionsOptions(),
   ]);
 
   const allTechnologies =
     technologiesResult.ok && technologiesResult.data ? technologiesResult.data : [];
-
-  const allPositions = positionsData;
 
   return (
     <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">
@@ -30,7 +28,7 @@ export default async function EmployeesPage() {
             Zarządzaj dostępnością i alokacją Twoich specjalistów.
           </p>
         </div>
-        <EmployeeSheet allTechnologies={allTechnologies} allPositions={allPositions} />
+        <EmployeeSheet allTechnologies={allTechnologies} allPositions={positions} />
       </div>
 
       {/* Grid layout for displaying key performance indicator cards */}
@@ -67,9 +65,9 @@ export default async function EmployeesPage() {
 
       {/* Interactive table component displaying the list of employees */}
       <EmployeeListTable
-        data={employeesData}
+        data={employees}
         allTechnologies={allTechnologies}
-        allPositions={allPositions}
+        allPositions={positions}
       />
     </div>
   );
