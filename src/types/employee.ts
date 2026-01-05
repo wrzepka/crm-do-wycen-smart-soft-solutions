@@ -9,8 +9,8 @@ import { Prisma } from '@/generated/prisma/client';
 
 // -- Zod types --
 export type Employee = z.infer<typeof employeeBaseSchema>;
-export type NewEmployeeDTO = z.infer<typeof newEmployeeSchema>;
-export type UpdateEmployeeDTO = z.infer<typeof updateEmployeeSchema>;
+export type NewEmployeeInput = z.infer<typeof newEmployeeSchema>;
+export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
 export type EmployeeWithTechnologies = z.infer<typeof employeeWithTechnologiesSchema>;
 
 // -- Prisma types --
