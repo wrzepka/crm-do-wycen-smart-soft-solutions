@@ -137,7 +137,7 @@ export async function deletePosition(id: number) {
   }
 
   try {
-    // check if it are they arranged to a possiton
+    // check if it are they arranged to a position
     const employeesWithPosition = await prisma.employees.count({
       where: { position_id: id },
     });
