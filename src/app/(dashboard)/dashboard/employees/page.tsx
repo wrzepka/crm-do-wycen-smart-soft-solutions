@@ -1,9 +1,9 @@
 import { getEmployeesList, getEmployeeStats } from '@/lib/data/employee';
-import { EmployeeListTable } from '@/components/shared/EmployeeListTable';
+import { EmployeeListTable } from '@/components/dashboard/employees/employee-list-table';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { getAllTechnologies } from '@/lib/actions/technology-actions';
+import { getAllTechnologies } from '@/lib/data/technology';
 import { getPositionsList } from '@/lib/data/position';
 
 export default async function EmployeesPage() {

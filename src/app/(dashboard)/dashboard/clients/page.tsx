@@ -1,10 +1,10 @@
-import { ClientListTable } from '@/components/shared/ClientListTable';
-import { DataTablePagination } from '@/components/shared/DataPagination';
+import { ClientListTable } from '@/components/dashboard/clients/client-list-table';
+import { DataTablePagination } from '@/components/shared/data-pagination';
 import { ClientSheet } from '@/components/dashboard/clients/client-sheet';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { getClientsList } from '@/lib/data/client';
-import { ClientFilters } from '@/components/shared/client-filters';
+import { ClientFilters } from '@/components/dashboard/clients/client-filters';
 
 export default async function ClientsPage({
   searchParams,

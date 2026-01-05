@@ -1,5 +1,5 @@
 import { getPositionsList } from '@/lib/data/position';
-import { PositionListTable } from '@/components/shared/PositionListTable';
+import { PositionListTable } from '@/components/dashboard/positions/position-list-table';
 import { PositionSheet } from '@/components/dashboard/positions/position-sheet';
 
 export default async function PositionsPage() {

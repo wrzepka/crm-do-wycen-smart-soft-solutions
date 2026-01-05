@@ -10,31 +10,6 @@ import {
 import { prisma } from '@/lib/prisma-client';
 
 /**
- * Pobierz wszystkie technologie
- */
-export async function getAllTechnologies() {
-  try {
-    const technologies = await prisma.technologies.findMany({
-      orderBy: { name: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        _count: {
-          select: {
-            employee_technology: true,
-          },
-        },
-      },
-    });
-
-    return { ok: true, data: technologies };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Błąd podczas pobierania technologii';
-    return { ok: false, error: message };
-  }
-}
-
-/**
  * Stwórz nową technologię
  */
 export async function createTechnology(input: FormData | Record<string, unknown>) {
@@ -280,48 +255,6 @@ export async function setEmployeeTechnologies(employeeId: number, technologyIds:
     return { ok: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Błąd podczas przypisywania technologii';
-    return { ok: false, error: message };
-  }
-}
-
-/**
- * Pobierz technologie przypisane do pracownika
- */
-export async function getEmployeeTechnologies(employeeId: number | string) {
-  try {
-    const parsedId = typeof employeeId === 'string' ? parseInt(employeeId, 10) : employeeId;
-
-    if (Number.isNaN(parsedId)) {
-      throw new Error('Nieprawidłowe ID pracownika');
-    }
-
-    const technologies = await prisma.employee_technology.findMany({
-      where: { employee_id: parsedId },
-      include: {
-        technologies: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        technologies: {
-          name: 'asc',
-        },
-      },
-    });
-
-    // Przekształć dane do łatwiejszego formatu
-    const formattedTechnologies = technologies.map((et) => ({
-      id: et.technologies.id,
-      name: et.technologies.name,
-    }));
-
-    return { ok: true, data: formattedTechnologies };
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : 'Błąd podczas pobierania technologii pracownika';
     return { ok: false, error: message };
   }
 }

@@ -1,16 +1,13 @@
-import { prisma } from '@/lib/prisma-client';
-import { TechnologyListTable } from '@/components/shared/TechnologyListTable';
+import { TechnologyListTable } from '@/components/dashboard/technologies/technology-list-table';
 import { TechnologySheet } from '@/components/dashboard/technologies/technology-sheet';
+import { getAllTechnologies } from '@/lib/data/technology';
 
 export default async function TechnologiesPage() {
   // Fetching all technologies from DB directly in Server Component
-  const technologiesData = await prisma.technologies.findMany({
-    orderBy: { name: 'asc' },
-    select: {
-      id: true,
-      name: true,
-    },
-  });
+  const technologiesData = await getAllTechnologies();
+  // FAST FIX
+  // TODO: add toast
+  const technologies = technologiesData.ok ? technologiesData.data : [];
 
   return (
     <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">
@@ -28,7 +25,7 @@ export default async function TechnologiesPage() {
       </div>
 
       {/* Main Content */}
-      <TechnologyListTable data={technologiesData} />
+      <TechnologyListTable data={technologies} />
     </div>
   );
 }
