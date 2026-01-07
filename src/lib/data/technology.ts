@@ -18,7 +18,7 @@ export async function getTechnologies(): Promise<technologies[]> {
   }
 }
 
-export async function getTechnologiesEmployeesCount(): Promise<technologies[]> {
+export async function getTechnologiesWithCount() {
   try {
     const technologiesList = await prisma.technologies.findMany({
       orderBy: { name: 'asc' },

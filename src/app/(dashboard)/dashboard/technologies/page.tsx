@@ -1,11 +1,9 @@
 import { TechnologyListTable } from '@/components/dashboard/technologies/technology-list-table';
 import { TechnologySheet } from '@/components/dashboard/technologies/technology-sheet';
-import { getTechnologiesEmployeesCount } from '@/lib/data/technology';
+import { getTechnologiesWithCount } from '@/lib/data/technology';
 
 export default async function TechnologiesPage() {
-  // Fetching all technologies from DB directly in Server Component
-  const technologies = await getTechnologiesEmployeesCount();
-  // FAST FIX
+  const technologies = await getTechnologiesWithCount();
 
   return (
     <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">

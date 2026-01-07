@@ -20,6 +20,9 @@ import { useState } from 'react';
 interface TechnologyData {
   id: number;
   name: string;
+  _count: {
+    employee_technology: number;
+  };
 }
 
 interface Props {
@@ -51,9 +54,8 @@ export function TechnologyListTable({ data }: Props) {
         <Table>
           <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
             <TableRow className="border-slate-200 dark:border-slate-800 hover:bg-transparent">
-              <TableHead className="text-slate-500 font-semibold pl-6 w-full">
-                Nazwa Technologii
-              </TableHead>
+              <TableHead className="text-slate-500 font-semibold pl-6">Nazwa Technologii</TableHead>
+              <TableHead className="text-slate-500 font-semibold">Ilość pracowników</TableHead>
               <TableHead className="text-right text-slate-500 font-semibold pr-6">Akcje</TableHead>
             </TableRow>
           </TableHeader>
@@ -80,6 +82,11 @@ export function TechnologyListTable({ data }: Props) {
                         {tech.name}
                       </Badge>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs text-slate-500 font-normal">
+                      {tech._count.employee_technology}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <TechnologySheet technology={tech}>
