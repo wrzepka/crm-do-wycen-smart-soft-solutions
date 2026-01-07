@@ -10,7 +10,7 @@ export async function getPositions(): Promise<positions[]> {
     return positions;
   } catch (error) {
     console.error('Błąd pobierania stanowisk:', error); // debug log
-    return [];
+    throw new Error('Nie udało się załadować listy stanowisk. Spróbuj odświeżyć stronę.');
   }
 }
 
@@ -26,7 +26,7 @@ export async function getPositionsOptions(): Promise<{ id: number; name: string 
     return positions;
   } catch (error) {
     console.error('Błąd pobierania stanowisk', error);
-    return [];
+    throw new Error('Nie udało się załadować listy stanowisk. Spróbuj odświeżyć stronę.');
   }
 }
 
@@ -49,6 +49,6 @@ export async function getPositionsWithHourlyRate() {
     return positions;
   } catch (error) {
     console.error('Błąd pobierania stanowisk ze stawką:', error);
-    return [];
+    throw new Error('Nie udało się załadować listy stanowisk. Spróbuj odświeżyć stronę.');
   }
 }

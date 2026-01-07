@@ -27,7 +27,7 @@ export async function getEmployees(): Promise<EmployeeWithRelations[]> {
     return employees;
   } catch (error) {
     console.error('Błąd pobierania pracowników:', error); // debug log
-    return [];
+    throw new Error('Nie udało się załadować listy pracowników. Spróbuj odświeżyć stronę.');
   }
 }
 
@@ -62,7 +62,7 @@ export async function getSafeEmployees(): Promise<SafeEmployee[]> {
     return employees;
   } catch (error) {
     console.error('Błąd pobierania bezpiecznej listy pracowników:', error);
-    return [];
+    throw new Error('Nie udało się załadować listy pracowników. Spróbuj odświeżyć stronę.');
   }
 }
 

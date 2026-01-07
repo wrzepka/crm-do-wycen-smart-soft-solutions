@@ -49,10 +49,6 @@ export async function getClientsList(
     };
   } catch (error) {
     console.error('Błąd pobierania klientów: ', error);
-    //FIX: same as above
-    return {
-      clients: [],
-      totalPages: 0,
-    };
+    throw new Error('Nie udało się załadować listy klientów. Spróbuj odświeżyć stronę.');
   }
 }

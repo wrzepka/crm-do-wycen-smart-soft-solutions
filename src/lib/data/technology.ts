@@ -21,7 +21,6 @@ export async function getAllTechnologies(): Promise<GetPositionsResult> {
     return { ok: true, data: technologies };
   } catch (err) {
     console.log('Błąd podczas pobierania technologii: ', err);
-    const message = err instanceof Error ? err.message : 'Błąd podczas pobierania technologii';
-    return { ok: false, error: message };
+    throw new Error('Nie udało się załadować listy technologii. Spróbuj odświeżyć stronę.');
   }
 }
