@@ -27,7 +27,42 @@ export async function getEmployees(): Promise<EmployeeWithRelations[]> {
     return employees;
   } catch (error) {
     console.error('Błąd pobierania pracowników:', error); // debug log
-    return [];
+    throw new Error('Nie udało się załadować listy pracowników. Spróbuj odświeżyć stronę.');
+  }
+}
+
+// This is safe version of getEmployees(), without hourly_rate.
+export async function getSafeEmployees(): Promise<SafeEmployee[]> {
+  try {
+    const employees = await prisma.employees.findMany({
+      orderBy: { last_name: 'asc' },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        busy_from: true,
+        busy_to: true,
+        status: true,
+
+        employee_technology: {
+          select: {
+            technologies: true,
+          },
+        },
+
+        position: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return employees;
+  } catch (error) {
+    console.error('Błąd pobierania bezpiecznej listy pracowników:', error);
+    throw new Error('Nie udało się załadować listy pracowników. Spróbuj odświeżyć stronę.');
   }
 }
 
