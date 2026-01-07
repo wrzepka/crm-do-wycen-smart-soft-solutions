@@ -3,19 +3,16 @@ import { EmployeeListTable } from '@/components/dashboard/employees/employee-lis
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { getAllTechnologies } from '@/lib/data/technology';
+import { getTechnologies } from '@/lib/data/technology';
 import { getPositionsOptions } from '@/lib/data/position';
 
 export default async function EmployeesPage() {
   const [employees, stats, technologiesResult, positions] = await Promise.all([
     getSafeEmployees(),
     getEmployeeStats(),
-    getAllTechnologies(),
+    getTechnologies(),
     getPositionsOptions(),
   ]);
-
-  const allTechnologies =
-    technologiesResult.ok && technologiesResult.data ? technologiesResult.data : [];
 
   return (
     <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">
@@ -28,7 +25,7 @@ export default async function EmployeesPage() {
             Zarządzaj dostępnością i alokacją Twoich specjalistów.
           </p>
         </div>
-        <EmployeeSheet allTechnologies={allTechnologies} allPositions={positions} />
+        <EmployeeSheet allTechnologies={technologiesResult} allPositions={positions} />
       </div>
 
       {/* Grid layout for displaying key performance indicator cards */}
@@ -66,7 +63,7 @@ export default async function EmployeesPage() {
       {/* Interactive table component displaying the list of employees */}
       <EmployeeListTable
         data={employees}
-        allTechnologies={allTechnologies}
+        allTechnologies={technologiesResult}
         allPositions={positions}
       />
     </div>
