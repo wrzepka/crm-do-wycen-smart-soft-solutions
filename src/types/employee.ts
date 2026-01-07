@@ -31,6 +31,30 @@ export type EmployeeWithRelations = Prisma.employeesGetPayload<{
   };
 }>;
 
+export type SafeEmployee = Prisma.employeesGetPayload<{
+  select: {
+    id: true;
+    first_name: true;
+    last_name: true;
+    busy_from: true;
+    busy_to: true;
+    status: true;
+
+    employee_technology: {
+      select: {
+        technologies: true;
+      };
+    };
+
+    position: {
+      select: {
+        id: true;
+        name: true;
+      };
+    };
+  };
+}>;
+
 // Formatted type for frontend (with employee_technology relation)
 export type FormattedEmployee = Omit<EmployeeWithRelations, 'employee_technology'> & {
   technologies: Array<{ id: number; name: string }>;

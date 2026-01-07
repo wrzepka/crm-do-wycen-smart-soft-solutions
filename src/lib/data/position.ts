@@ -1,23 +1,31 @@
 import { prisma } from '@/lib/prisma-client';
 import type { positions } from '@/generated/prisma/client';
 
-export async function getPositionsList(): Promise<positions[]> {
+export async function getPositions(): Promise<positions[]> {
   try {
     const positions = await prisma.positions.findMany({
       orderBy: { name: 'asc' },
-      include: {
-        employees: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-          },
-        },
-      },
     });
+
     return positions;
   } catch (error) {
     console.error('Błąd pobierania stanowisk:', error); // debug log
+    return [];
+  }
+}
+
+export async function getPositionsOptions(): Promise<{ id: number; name: string }[]> {
+  try {
+    const positions = await prisma.positions.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+    return positions;
+  } catch (error) {
+    console.error('Błąd pobierania stanowisk', error);
     return [];
   }
 }

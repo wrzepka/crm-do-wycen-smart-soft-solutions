@@ -10,14 +10,14 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Edit2, Search } from 'lucide-react';
-import { EmployeeWithRelations } from '@/types/employee';
+import { SafeEmployee } from '@/types/employee';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { EmployeeTechnologiesCell } from '@/components/dashboard/employees/employee-technologies-cell';
 
 interface Props {
-  data: EmployeeWithRelations[];
+  data: SafeEmployee[];
   allTechnologies: { id: number; name: string }[];
   allPositions: { id: number; name: string }[];
 }
@@ -108,7 +108,7 @@ export function EmployeeListTable({ data, allTechnologies, allPositions }: Props
                   <TableCell>
                     <EmployeeTechnologiesCell
                       employeeId={employee.id}
-                      initialTechIds={employee.employee_technology.map((et) => et.technology_id)}
+                      initialTechIds={employee.employee_technology.map((et) => et.technologies.id)}
                       allTechnologies={allTechnologies}
                     />
                   </TableCell>

@@ -1,10 +1,10 @@
-import { getPositionsList } from '@/lib/data/position';
+import { getPositions } from '@/lib/data/position';
 import { PositionListTable } from '@/components/dashboard/positions/position-list-table';
 import { PositionSheet } from '@/components/dashboard/positions/position-sheet';
 
 export default async function PositionsPage() {
   // fetch raw data directly from backend (hourly_rate is decimal)
-  const rawPositions = await getPositionsList();
+  const rawPositions = await getPositions();
 
   // transformation: converting decimal to number so next.js can send data to client
   const formattedPositions = rawPositions.map((pos) => ({

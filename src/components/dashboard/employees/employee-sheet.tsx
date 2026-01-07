@@ -12,10 +12,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { EmployeeForm } from './employee-form';
-import { EmployeeWithRelations } from '@/types/employee';
+import { SafeEmployee } from '@/types/employee';
 
 interface EmployeeSheetProps {
-  employee?: EmployeeWithRelations;
+  employee?: SafeEmployee;
   children?: React.ReactNode;
   allTechnologies: { id: number; name: string }[];
   allPositions: { id: number; name: string }[];
