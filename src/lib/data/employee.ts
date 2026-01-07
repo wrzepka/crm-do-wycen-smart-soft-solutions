@@ -66,41 +66,6 @@ export async function getSafeEmployees(): Promise<SafeEmployee[]> {
   }
 }
 
-// This is safe version of getEmployees(), without hourly_rate.
-export async function getSafeEmployees(): Promise<SafeEmployee[]> {
-  try {
-    const employees = await prisma.employees.findMany({
-      orderBy: { last_name: 'asc' },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        busy_from: true,
-        busy_to: true,
-        status: true,
-
-        employee_technology: {
-          select: {
-            technologies: true,
-          },
-        },
-
-        position: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    return employees;
-  } catch (error) {
-    console.error('Błąd pobierania bezpiecznej listy pracowników:', error);
-    return [];
-  }
-}
-
 //gets employee stats for dashboard/employees page cards
 export async function getEmployeeStats() {
   const stats = await prisma.employees.groupBy({
