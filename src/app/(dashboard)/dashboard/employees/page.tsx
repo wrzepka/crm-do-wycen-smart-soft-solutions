@@ -5,6 +5,8 @@ import { Users, Briefcase, CheckCircle, Clock, type LucideIcon } from 'lucide-re
 import { Card, CardContent } from '@/components/ui/card';
 import { getTechnologies } from '@/lib/data/technology';
 import { getPositionsOptions } from '@/lib/data/position';
+import { EmployeeFilters } from '@/components/dashboard/employees/employee-filters';
+import { EMPLOYEE_STATUS_OPTIONS } from '@/lib/constants';
 
 export default async function EmployeesPage() {
   const [employees, stats, technologiesResult, positions] = await Promise.all([
@@ -13,6 +15,11 @@ export default async function EmployeesPage() {
     getTechnologies(),
     getPositionsOptions(),
   ]);
+
+  const positionOptions = positions.map((position) => ({
+    value: String(position.id),
+    label: position.name,
+  }));
 
   return (
     <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">
@@ -59,6 +66,11 @@ export default async function EmployeesPage() {
           description="Tymczasowo nieobecni"
         />
       </div>
+
+      <EmployeeFilters
+        statusOptions={EMPLOYEE_STATUS_OPTIONS}
+        positionOptions={positionOptions}
+      ></EmployeeFilters>
 
       {/* Interactive table component displaying the list of employees */}
       <EmployeeListTable
