@@ -39,7 +39,7 @@ export function EmployeeFilters({
         options={positionOptions}
       />
 
-      {/*TODO: Checkboxes with tech in future I guess*/}
+      {/*TODO: Checkboxes (or even better: multiselect) with tech in future I guess*/}
       <ClearFiltersButton />
     </div>
   );
