@@ -13,6 +13,7 @@ import { Edit2 } from 'lucide-react';
 import { SafeEmployee } from '@/types/employee';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
 import { EmployeeTechnologiesCell } from '@/components/dashboard/employees/employee-technologies-cell';
+import { useIsFiltered } from '@/lib/hooks';
 
 interface Props {
   data: SafeEmployee[];
@@ -21,6 +22,8 @@ interface Props {
 }
 
 export function EmployeeListTable({ data, allTechnologies, allPositions }: Props) {
+  const isFiltered = useIsFiltered(['query', 'status', 'position']);
+
   return (
     <div className="space-y-4">
       {/* Main table container with border and rounded corners styling */}
@@ -38,7 +41,9 @@ export function EmployeeListTable({ data, allTechnologies, allPositions }: Props
             {data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
-                  Brak pracowników spełniających kryteria
+                  {isFiltered
+                    ? 'Brak pracowników spełniających kryteria'
+                    : 'Brak dodanych pracowników'}
                 </TableCell>
               </TableRow>
             ) : (

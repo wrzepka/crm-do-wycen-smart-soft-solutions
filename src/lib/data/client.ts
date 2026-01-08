@@ -33,7 +33,6 @@ export async function getClientsList(
         where: whereClause,
         skip: skip,
         take: pageSize,
-        //FIX: Prisma wants an array of objects for sorting
 
         orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
         include: {

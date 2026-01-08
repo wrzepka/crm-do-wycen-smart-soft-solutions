@@ -7,10 +7,23 @@ import { getTechnologies } from '@/lib/data/technology';
 import { getPositionsOptions } from '@/lib/data/position';
 import { EmployeeFilters } from '@/components/dashboard/employees/employee-filters';
 import { EMPLOYEE_STATUS_OPTIONS } from '@/lib/constants';
+import { DataTablePagination } from '@/components/shared/data-pagination';
 
-export default async function EmployeesPage() {
-  const [employees, stats, technologiesResult, positions] = await Promise.all([
-    getSafeEmployees(),
+export default async function EmployeesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; query?: string; status?: string; position?: string }>;
+}) {
+  const { page, query, status, position } = await searchParams;
+  const currentPage = Math.max(1, Number(page) || 1);
+  // Get query and client type(isLead) from URL
+  const searchQuery = query || '';
+  const employeeStatus = status || '';
+  const employeePosition = position || '';
+  const pageSize = 25;
+
+  const [{ employees, totalPages }, stats, technologiesResult, positions] = await Promise.all([
+    getSafeEmployees(searchQuery, employeeStatus, employeePosition, currentPage, pageSize),
     getEmployeeStats(),
     getTechnologies(),
     getPositionsOptions(),
@@ -78,6 +91,9 @@ export default async function EmployeesPage() {
         allTechnologies={technologiesResult}
         allPositions={positions}
       />
+      <div className="mt-4 flex justify-center">
+        <DataTablePagination currentPage={currentPage} totalPages={totalPages} />
+      </div>
     </div>
   );
 }
