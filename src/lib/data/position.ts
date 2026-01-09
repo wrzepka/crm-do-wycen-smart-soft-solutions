@@ -1,13 +1,34 @@
 import { prisma } from '@/lib/prisma-client';
-import type { positions } from '@/generated/prisma/client';
 
-export async function getPositions(): Promise<positions[]> {
+export async function getPositions(query: string = '', page: number = 1, pageSize: number = 25) {
+  const skip = (page - 1) * pageSize;
+
+  const whereClause = {
+    AND: [
+      query
+        ? {
+            name: { contains: query, mode: 'insensitive' as const },
+          }
+        : {},
+    ],
+  };
+
   try {
-    const positions = await prisma.positions.findMany({
-      orderBy: { name: 'asc' },
-    });
+    const [positions, positionsAmount] = await Promise.all([
+      prisma.positions.findMany({
+        where: whereClause,
+        skip: skip,
+        take: pageSize,
 
-    return positions;
+        orderBy: { name: 'asc' },
+      }),
+      prisma.positions.count({ where: whereClause }),
+    ]);
+
+    return {
+      positions,
+      totalPages: Math.ceil(positionsAmount / pageSize),
+    };
   } catch (error) {
     console.error('Błąd pobierania stanowisk:', error); // debug log
     throw new Error('Nie udało się załadować listy stanowisk. Spróbuj odświeżyć stronę.');
