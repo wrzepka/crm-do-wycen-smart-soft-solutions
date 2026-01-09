@@ -20,7 +20,7 @@ interface Props {
 }
 
 export function ClientListTable({ data }: Props) {
-  const isFiltered = useIsFiltered(['query', 'status', 'position']);
+  const isFiltered = useIsFiltered(['query', 'is_lead']);
 
   return (
     <div className="rounded-xl border bg-white dark:bg-[#0B1121] border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">

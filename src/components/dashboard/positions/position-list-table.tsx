@@ -24,7 +24,7 @@ interface Props {
 }
 
 export function PositionListTable({ data }: Props) {
-  const isFiltered = useIsFiltered(['query', 'status', 'position']);
+  const isFiltered = useIsFiltered(['query']);
 
   return (
     <div className="rounded-xl border bg-white dark:bg-[#0B1121] border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
