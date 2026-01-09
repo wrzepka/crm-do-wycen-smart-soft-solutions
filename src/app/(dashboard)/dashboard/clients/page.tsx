@@ -41,7 +41,6 @@ export default async function ClientsPage({
       </div>
       <ClientFilters></ClientFilters>
 
-      {/* TODO: Add isFiltered param or smth like that to handle scenario when query return 0 rows. (right now table will think that db is empty)*/}
       <ClientListTable data={clients} />
       <div className="mt-4 flex justify-center">
         <DataTablePagination currentPage={currentPage} totalPages={totalPages} />

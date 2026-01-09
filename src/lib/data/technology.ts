@@ -1,11 +1,26 @@
 import { prisma } from '@/lib/prisma-client';
 import type { technologies } from '@/generated/prisma/client';
 
-type GetPositionsResult = { ok: true; data: technologies[] } | { ok: false; error: string };
-
-export async function getAllTechnologies(): Promise<GetPositionsResult> {
+export async function getTechnologies(): Promise<technologies[]> {
   try {
-    const technologies = await prisma.technologies.findMany({
+    const technologiesList = await prisma.technologies.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    return technologiesList;
+  } catch (err) {
+    console.log('Błąd podczas pobierania technologii: ', err);
+    throw new Error('Nie udało się załadować listy technologii. Spróbuj odświeżyć stronę.');
+  }
+}
+
+export async function getTechnologiesWithCount() {
+  try {
+    const technologiesList = await prisma.technologies.findMany({
       orderBy: { name: 'asc' },
       select: {
         id: true,
@@ -18,7 +33,7 @@ export async function getAllTechnologies(): Promise<GetPositionsResult> {
       },
     });
 
-    return { ok: true, data: technologies };
+    return technologiesList;
   } catch (err) {
     console.log('Błąd podczas pobierania technologii: ', err);
     throw new Error('Nie udało się załadować listy technologii. Spróbuj odświeżyć stronę.');
