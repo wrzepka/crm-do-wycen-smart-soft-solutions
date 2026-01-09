@@ -4,6 +4,7 @@ import {
   newEmployeeSchema,
   updateEmployeeSchema,
   employeeWithTechnologiesSchema,
+  EmployeeStatus,
 } from '@/lib/schemas/employeeSchema';
 import { Prisma } from '@/generated/prisma/client';
 
@@ -12,6 +13,7 @@ export type Employee = z.infer<typeof employeeBaseSchema>;
 export type NewEmployeeInput = z.infer<typeof newEmployeeSchema>;
 export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
 export type EmployeeWithTechnologies = z.infer<typeof employeeWithTechnologiesSchema>;
+export type EmployeeStatusType = z.infer<typeof EmployeeStatus>;
 
 // -- Prisma types --
 export type EmployeeWithRelations = Prisma.employeesGetPayload<{

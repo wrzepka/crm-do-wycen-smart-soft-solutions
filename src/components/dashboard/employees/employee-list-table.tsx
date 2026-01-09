@@ -66,7 +66,9 @@ export function EmployeeListTable({ data, allTechnologies, allPositions }: Props
                     <div className="flex flex-col gap-1.5">
                       <StatusBadge status={employee.status} />
 
-                      {(employee.status === 'ACTIVE_BOOKED' || employee.status === 'ON_LEAVE') && (
+                      {(employee.status === 'ACTIVE_BOOKED' ||
+                        employee.status === 'ON_LEAVE' ||
+                        employee.status == 'ONBOARDING') && (
                         <span className="text-[11px] text-slate-400 font-mono">
                           {employee.busy_from
                             ? new Date(employee.busy_from).toLocaleDateString('pl-PL')
