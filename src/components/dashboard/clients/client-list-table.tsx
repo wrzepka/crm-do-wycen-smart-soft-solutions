@@ -13,12 +13,15 @@ import { ClientWithRelations } from '@/types/client';
 import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
 import { ClientSheet } from '@/components/dashboard/clients/client-sheet';
+import { useIsFiltered } from '@/lib/hooks';
 
 interface Props {
   data: ClientWithRelations[];
 }
 
 export function ClientListTable({ data }: Props) {
+  const isFiltered = useIsFiltered(['query', 'status', 'position']);
+
   return (
     <div className="rounded-xl border bg-white dark:bg-[#0B1121] border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <Table>
@@ -35,7 +38,7 @@ export function ClientListTable({ data }: Props) {
           {data.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                Brak klientów/leadów w bazie danych
+                {isFiltered ? 'Brak klientów spełniających kryteria' : 'Brak dodanych klientów'}
               </TableCell>
             </TableRow>
           ) : (

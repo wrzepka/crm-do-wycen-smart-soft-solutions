@@ -12,6 +12,7 @@ import { positions } from '@/generated/prisma/client';
 import { Button } from '@/components/ui/button';
 import { Edit2 } from 'lucide-react';
 import { PositionSheet } from '@/components/dashboard/positions/position-sheet';
+import { useIsFiltered } from '@/lib/hooks';
 
 // custom type to handle prisma decimal serialization issue since client components expect plain numbers
 type SerializedPosition = Omit<positions, 'hourly_rate'> & {
@@ -23,6 +24,8 @@ interface Props {
 }
 
 export function PositionListTable({ data }: Props) {
+  const isFiltered = useIsFiltered(['query', 'status', 'position']);
+
   return (
     <div className="rounded-xl border bg-white dark:bg-[#0B1121] border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <Table>
@@ -37,7 +40,7 @@ export function PositionListTable({ data }: Props) {
           {data.length === 0 ? (
             <TableRow>
               <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
-                Brak stanowisk w bazie danych.
+                {isFiltered ? 'Brak stanowisk spełniających kryteria' : 'Brak dodanych stanowisk'}
               </TableCell>
             </TableRow>
           ) : (
@@ -62,7 +65,7 @@ export function PositionListTable({ data }: Props) {
                   </div>
                 </TableCell>
                 <TableCell className="text-right pr-6">
-                  {/* type casting is necessary here because position sheet expects prisma decimal type but we are passing a serialized number */}
+                  {/* type casting is necessary here because position sheet expects prisma decimal type, but we are passing a serialized number */}
                   <PositionSheet position={position as unknown as positions}>
                     <Button
                       variant="ghost"

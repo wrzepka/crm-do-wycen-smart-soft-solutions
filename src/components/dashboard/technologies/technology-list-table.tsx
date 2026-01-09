@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { getColorForTechnology } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
+import { useIsFiltered } from '@/lib/hooks';
 
 // Simplified interface matching Prisma output
 interface TechnologyData {
@@ -32,6 +33,7 @@ interface Props {
 export function TechnologyListTable({ data }: Props) {
   // State purely for visual input handling
   const [searchTerm, setSearchTerm] = useState('');
+  const isFiltered = useIsFiltered(['query', 'status', 'position']);
 
   return (
     <div className="space-y-4">
@@ -63,7 +65,9 @@ export function TechnologyListTable({ data }: Props) {
             {data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={2} className="h-32 text-center text-muted-foreground">
-                  Brak technologii w bazie danych
+                  {isFiltered
+                    ? 'Brak technologii spełniających kryteria'
+                    : 'Brak dodanych technologii'}
                 </TableCell>
               </TableRow>
             ) : (
