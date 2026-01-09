@@ -2,7 +2,6 @@ import { prisma } from '@/lib/prisma-client';
 
 export async function getPositions(query: string = '', page: number = 1, pageSize: number = 25) {
   const skip = (page - 1) * pageSize;
-
   const whereClause = {
     AND: [
       query
