@@ -136,6 +136,7 @@ export const updateEmployeeSchema = employeeBaseSchema
   .partial()
   .extend({
     id: z.number().int().positive(),
+    status: EmployeeStatus.optional(),
   })
   .superRefine(validateDatesLogic);
 

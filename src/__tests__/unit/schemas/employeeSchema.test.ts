@@ -5,6 +5,95 @@ import {
 } from '@/lib/schemas/employeeSchema';
 
 describe('Employee schemas (Unit)', () => {
+  // ### Validate correctness of dates ###
+
+  describe('validateDatesLogic', () => {
+    it('should fail when "busy_to" is earlier than "busy_from"', () => {
+      const invalidData = {
+        first_name: 'Jan',
+        last_name: 'Kowalski',
+        status: 'ONBOARDING',
+        busy_from: new Date(2026, 1, 2),
+        busy_to: new Date(2026, 0, 1),
+      };
+
+      const result = newEmployeeSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+      if (result.success) throw new Error('Validation should failed');
+
+      expect(result.error.flatten().fieldErrors.busy_to).toBeDefined();
+    });
+
+    it('should fail when busy_to is empty', () => {
+      const invalidData = {
+        first_name: 'Jan',
+        last_name: 'Kowalski',
+        status: 'ONBOARDING',
+        busy_from: new Date(2026, 1, 2),
+      };
+
+      const result = newEmployeeSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+      if (result.success) throw new Error('Validation should failed');
+
+      expect(result.error.flatten().fieldErrors.busy_to).toBeDefined();
+    });
+
+    it('should fail when busy_from is empty', () => {
+      const invalidData = {
+        first_name: 'Jan',
+        last_name: 'Kowalski',
+        status: 'ONBOARDING',
+        busy_to: new Date(2026, 1, 2),
+      };
+
+      const result = newEmployeeSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+      if (result.success) throw new Error('Validation should failed');
+
+      expect(result.error.flatten().fieldErrors.busy_from).toBeDefined();
+    });
+
+    it('should fail when payload is modified and there is no status', () => {
+      const invalidData = {
+        id: 1,
+        first_name: 'Jan',
+        last_name: 'Kowalski',
+        status: undefined,
+        busy_from: new Date(2026, 1, 2),
+        busy_to: new Date(2026, 1, 5),
+      };
+
+      const result = updateEmployeeSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+      if (result.success) throw new Error('Validation should failed');
+
+      expect(result.error.flatten().fieldErrors.status).toBeDefined();
+    });
+
+    it('should fail when dates are correct, but status not', () => {
+      const invalidData = {
+        id: 1,
+        first_name: 'Jan',
+        last_name: 'Kowalski',
+        status: 'ACTIVE_AVAILABLE',
+        busy_from: new Date(2026, 1, 2),
+        busy_to: new Date(2026, 1, 5),
+      };
+
+      const result = updateEmployeeSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+      if (result.success) throw new Error('Validation should failed');
+
+      expect(result.error.flatten().fieldErrors.status).toBeDefined();
+    });
+  });
+
   // ### Validate creation of employee ###
   describe('newEmployeeSchema', () => {
     it('should validate a correct new employee', () => {
@@ -58,12 +147,13 @@ describe('Employee schemas (Unit)', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should validate Date objects for busy_from', () => {
+    it('should validate Date objects with correct date range and status', () => {
       const validData = {
         first_name: 'Jan',
         last_name: 'Test',
-        busy_from: new Date(),
-        busy_to: new Date(),
+        status: 'ACTIVE_BOOKED',
+        busy_from: new Date(2026, 0, 2),
+        busy_to: new Date(2026, 1, 1),
       };
 
       const result = newEmployeeSchema.safeParse(validData);
@@ -97,6 +187,8 @@ describe('Employee schemas (Unit)', () => {
       const partialData = {
         id: 10,
         status: 'ON_LEAVE',
+        busy_from: new Date(2026, 0, 2),
+        busy_to: new Date(2026, 1, 1),
       };
 
       const result = updateEmployeeSchema.safeParse(partialData);
