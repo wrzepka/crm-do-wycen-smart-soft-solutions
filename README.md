@@ -33,13 +33,13 @@ This section covers the database connection and backend logic.
 
 These components will be added as the project develops and complexity grows.
 
-| Feature            | Technology          | Status        | Purpose                                                            |
-| :----------------- | :------------------ | :------------ | :----------------------------------------------------------------- |
-| **Unit Testing**   | Jest                | ⬜ To Install | Testing the logic of Server Actions, services, and Zod validators. |
-| **E2E Testing**    | Playwright          | ⬜ To Install | Testing full user scenarios (e.g., login, data submission).        |
-| **Charts**         | Recharts            | ⬜ To Install | Data visualization on manager dashboards.                          |
-| **Email Service**  | Nodemailer          | ⬜ To Install | Sending notifications and invoices.                                |
-| **PDF Generation** | @react-pdf/renderer | ⬜ To Install | Creating dynamic reports and documents.                            |
+| Feature            | Technology          | Status         | Purpose                                                            |
+| :----------------- | :------------------ | :------------- | :----------------------------------------------------------------- |
+| **Unit Testing**   | Jest                | ⬜ In progress | Testing the logic of Server Actions, services, and Zod validators. |
+| **E2E Testing**    | Playwright          | ⬜ To Install  | Testing full user scenarios (e.g., login, data submission).        |
+| **Charts**         | Recharts            | ⬜ To Install  | Data visualization on manager dashboards.                          |
+| **Email Service**  | Nodemailer          | ⬜ To Install  | Sending notifications and invoices.                                |
+| **PDF Generation** | @react-pdf/renderer | ⬜ To Install  | Creating dynamic reports and documents.                            |
 
 ---
 
