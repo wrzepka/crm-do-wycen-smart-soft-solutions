@@ -33,7 +33,6 @@ export async function getClientsList(
         where: whereClause,
         skip: skip,
         take: pageSize,
-        //FIX: Prisma wants an array of objects for sorting
 
         orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }],
         include: {
@@ -49,10 +48,6 @@ export async function getClientsList(
     };
   } catch (error) {
     console.error('Błąd pobierania klientów: ', error);
-    //FIX: same as above
-    return {
-      clients: [],
-      totalPages: 0,
-    };
+    throw new Error('Nie udało się załadować listy klientów. Spróbuj odświeżyć stronę.');
   }
 }

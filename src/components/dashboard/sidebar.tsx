@@ -6,12 +6,15 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
+  Building2,
   Briefcase,
   FileText,
   Settings,
   LogOut,
   PieChart,
   Layers,
+  Cpu,
+  BriefcaseBusiness,
   LucideIcon,
   Loader2,
 } from 'lucide-react';
@@ -28,7 +31,6 @@ interface SidebarLinkProps {
 
 function SidebarLink({ href, icon: Icon, label }: SidebarLinkProps) {
   const pathname = usePathname();
-  // Check active state for styling
   const isActive = pathname === href;
 
   return (
@@ -36,7 +38,6 @@ function SidebarLink({ href, icon: Icon, label }: SidebarLinkProps) {
       href={href}
       className={cn(
         'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-        // Apply active or inactive styles based on current path
         isActive
           ? 'bg-primary text-primary-foreground shadow-md shadow-blue-900/20'
           : 'text-slate-400 hover:bg-white/5 hover:text-white',
@@ -52,14 +53,11 @@ function SidebarLink({ href, icon: Icon, label }: SidebarLinkProps) {
 }
 
 export function DashboardSidebar() {
-  // transition hook usage
   const [isPending, startTransition] = useTransition();
 
-  // logout logic with transition hook
   const handleLogout = () => {
     startTransition(async () => {
       const result = await logoutAction();
-      // Check if there are any errors
       if (result?.error) {
         toast.error(result.error);
       }
@@ -67,12 +65,10 @@ export function DashboardSidebar() {
   };
 
   return (
-    // Sidebar hidden on mobile, visible on desktop (md:flex)
     <aside className="hidden w-72 flex-col h-full bg-[#0B1121] text-white md:flex flex-shrink-0 relative z-20 border-r border-white/5">
       {/* Header with Logo */}
       <div className="flex h-16 items-center px-6 border-b border-white/5 bg-[#0B1121] sticky top-0 z-10 overflow-hidden">
         <div className="flex items-center gap-3 w-full">
-          {/* Logo container: w-auto preserves aspect ratio */}
           <div className="relative h-14 w-auto min-w-[50px] flex-shrink-0">
             <Image
               src="/logo.png"
@@ -95,26 +91,46 @@ export function DashboardSidebar() {
         </div>
       </div>
 
-      {/* Scrollable navigation area */}
-      <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      {/* Scrollable navigation area
+       */}
+      <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8 sidebar-scrollbar">
         <div>
           <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Oferty i klienci
+            Sprzedaż i Projekty
           </div>
           <div className="space-y-1">
             <SidebarLink href="/dashboard" icon={LayoutDashboard} label="Pulpit" />
             <SidebarLink href="/dashboard/quotes" icon={FileText} label="Wyceny i Oferty" />
-            <SidebarLink href="/dashboard/clients" icon={Users} label="Klienci i Leady" />
+            <SidebarLink href="/dashboard/projects" icon={Briefcase} label="Projekty" />
           </div>
         </div>
 
         <div>
           <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Raporty i analizy
+            Organizacja
           </div>
           <div className="space-y-1">
-            <SidebarLink href="/dashboard/projects" icon={Briefcase} label="Projekty w toku" />
-            <SidebarLink href="/dashboard/components" icon={Layers} label="Katalog Usług" />
+            <SidebarLink href="/dashboard/clients" icon={Building2} label="Klienci i Leady" />
+            <SidebarLink href="/dashboard/employees" icon={Users} label="Pracownicy" />
+          </div>
+        </div>
+
+        <div>
+          <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Katalogi
+          </div>
+          <div className="space-y-1">
+            <SidebarLink href="/dashboard/positions" icon={BriefcaseBusiness} label="Stanowiska" />
+            <SidebarLink href="/dashboard/technologies" icon={Cpu} label="Technologie" />
+            <SidebarLink href="/dashboard/components" icon={Layers} label="Usługi" />
+          </div>
+        </div>
+
+        <div>
+          <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Raporty
+          </div>
+          <div className="space-y-1">
             <SidebarLink href="/dashboard/reports" icon={PieChart} label="Raporty Skuteczności" />
           </div>
         </div>
