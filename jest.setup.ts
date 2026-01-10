@@ -14,10 +14,18 @@ if (!dbUrl) {
 }
 
 // If DB name does not contain 'test' and database server is not located locally, STOP THE TESTS
-if (!dbUrl.includes('test') && !dbUrl.includes('localhost')) {
-  console.error('UWAGA! Próbujesz uruchomić testy na bazie produkcyjnej/deweloperskiej!');
-  console.error(`Aktualny URL: ${dbUrl}`);
-  throw new Error('Testy muszą być uruchamiane na bazie testowej!');
+if (!dbUrl.includes('test') || !dbUrl.includes('localhost')) {
+  const errorMessage = `FATAL ERROR: BLOKADA BEZPIECZEŃSTWA
+  
+  Próbujesz uruchomić testy na bazie produkcyjnej/deweloperskiej!
+  Wykryty URL: ${dbUrl}
+  
+  Wymagane jest słowo 'test' w nazwie bazy danych (np. nextcrm_test).
+  Wymagana jest również baza hostowana lokalnie '@localhost'.
+  Zmień URL w pliku '.env.test' i spróbuj ponownie.
+  `;
+
+  throw new Error(errorMessage);
 }
 
 // 3. Mocking Next.js Navigation
