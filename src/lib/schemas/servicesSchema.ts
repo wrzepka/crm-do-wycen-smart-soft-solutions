@@ -38,35 +38,23 @@ export const serviceBaseSchema = z.object({
     .optional()
     .or(z.literal('')),
 
-  estimated_hours: z
-    .preprocess(
-      (val) => {
-        if (val === '' || val === null || val === undefined) return null;
-        const num = Number(val);
-        return isNaN(num) ? null : num;
-      },
-      z
-        .number()
-        .positive({ message: 'Szacowane godziny muszą być dodatnie' })
-        .nullable()
-        .optional(),
-    )
-    .refine((val) => val === null || val > 0, {
-      message: 'Szacowane godziny muszą być dodatnie',
-    }),
+  estimated_hours: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z.number().positive({ message: 'Szacowane godziny muszą być dodatnie' }).nullable().optional(),
+  ),
 
-  estimated_price: z
-    .preprocess(
-      (val) => {
-        if (val === '' || val === null || val === undefined) return null;
-        const num = Number(val);
-        return isNaN(num) ? null : num;
-      },
-      z.number().positive({ message: 'Szacowana cena musi być dodatnia' }).nullable().optional(),
-    )
-    .refine((val) => val === null || val > 0, {
-      message: 'Szacowana cena musi być dodatnia',
-    }),
+  estimated_price: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z.number().positive({ message: 'Szacowana cena musi być dodatnia' }).nullable().optional(),
+  ),
 
   status: z
     .string()
