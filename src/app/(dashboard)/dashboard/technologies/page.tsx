@@ -36,6 +36,7 @@ export default async function TechnologiesPage({
 
       <TechnologyFilters />
 
+      {/* Main Content */}
       <TechnologyListTable data={technologies} />
 
       <div className="mt-4 flex justify-center">
