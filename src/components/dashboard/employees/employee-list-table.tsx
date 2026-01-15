@@ -9,50 +9,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit2, Search } from 'lucide-react';
-import { EmployeeWithRelations } from '@/types/employee';
+import { Edit2 } from 'lucide-react';
+import { SafeEmployee } from '@/types/employee';
 import { EmployeeSheet } from '@/components/dashboard/employees/employee-sheet';
-import { Input } from '@/components/ui/input';
-import { useState } from 'react';
 import { EmployeeTechnologiesCell } from '@/components/dashboard/employees/employee-technologies-cell';
+import { useIsFiltered } from '@/lib/hooks';
 
 interface Props {
-  data: EmployeeWithRelations[];
+  data: SafeEmployee[];
   allTechnologies: { id: number; name: string }[];
   allPositions: { id: number; name: string }[];
 }
 
 export function EmployeeListTable({ data, allTechnologies, allPositions }: Props) {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  //testing filtering logic
-  const filteredData = data.filter((employee) => {
-    const search = searchTerm.toLowerCase();
-    const fullName = `${employee.first_name} ${employee.last_name}`.toLowerCase();
-    const positionName = employee.position?.name?.toLowerCase() || '';
-
-    return fullName.includes(search) || positionName.includes(search);
-  });
+  const isFiltered = useIsFiltered(['query', 'status', 'position']);
 
   return (
     <div className="space-y-4">
-      {/* Top bar containing the search input and result count indicator */}
-      <div className="flex items-center justify-between">
-        <div className="relative w-64">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
-          <Input
-            placeholder="Szukaj pracownika..."
-            className="pl-8 bg-white dark:bg-[#0B1121] border-slate-200 dark:border-slate-800"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="text-sm text-slate-500">
-          Wyświetlono:{' '}
-          <span className="font-medium text-slate-900 dark:text-white">{filteredData.length}</span>
-        </div>
-      </div>
-
       {/* Main table container with border and rounded corners styling */}
       <div className="rounded-xl border bg-white dark:bg-[#0B1121] border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <Table>
@@ -65,14 +38,16 @@ export function EmployeeListTable({ data, allTechnologies, allPositions }: Props
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredData.length === 0 ? (
+            {data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
-                  Brak pracowników spełniających kryteria
+                  {isFiltered
+                    ? 'Brak pracowników spełniających kryteria'
+                    : 'Brak dodanych pracowników'}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredData.map((employee) => (
+              data.map((employee) => (
                 <TableRow
                   key={employee.id}
                   className="border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
@@ -91,7 +66,9 @@ export function EmployeeListTable({ data, allTechnologies, allPositions }: Props
                     <div className="flex flex-col gap-1.5">
                       <StatusBadge status={employee.status} />
 
-                      {(employee.status === 'ACTIVE_BOOKED' || employee.status === 'ON_LEAVE') && (
+                      {(employee.status === 'ACTIVE_BOOKED' ||
+                        employee.status === 'ON_LEAVE' ||
+                        employee.status == 'ONBOARDING') && (
                         <span className="text-[11px] text-slate-400 font-mono">
                           {employee.busy_from
                             ? new Date(employee.busy_from).toLocaleDateString('pl-PL')
@@ -108,7 +85,7 @@ export function EmployeeListTable({ data, allTechnologies, allPositions }: Props
                   <TableCell>
                     <EmployeeTechnologiesCell
                       employeeId={employee.id}
-                      initialTechIds={employee.employee_technology.map((et) => et.technology_id)}
+                      initialTechIds={employee.employee_technology.map((et) => et.technologies.id)}
                       allTechnologies={allTechnologies}
                     />
                   </TableCell>

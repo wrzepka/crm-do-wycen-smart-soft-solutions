@@ -4,14 +4,16 @@ import {
   newEmployeeSchema,
   updateEmployeeSchema,
   employeeWithTechnologiesSchema,
+  EmployeeStatus,
 } from '@/lib/schemas/employeeSchema';
 import { Prisma } from '@/generated/prisma/client';
 
 // -- Zod types --
 export type Employee = z.infer<typeof employeeBaseSchema>;
-export type NewEmployeeDTO = z.infer<typeof newEmployeeSchema>;
-export type UpdateEmployeeDTO = z.infer<typeof updateEmployeeSchema>;
+export type NewEmployeeInput = z.infer<typeof newEmployeeSchema>;
+export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
 export type EmployeeWithTechnologies = z.infer<typeof employeeWithTechnologiesSchema>;
+export type EmployeeStatusType = z.infer<typeof EmployeeStatus>;
 
 // -- Prisma types --
 export type EmployeeWithRelations = Prisma.employeesGetPayload<{
@@ -26,6 +28,30 @@ export type EmployeeWithRelations = Prisma.employeesGetPayload<{
         id: true;
         name: true;
         hourly_rate: true;
+      };
+    };
+  };
+}>;
+
+export type SafeEmployee = Prisma.employeesGetPayload<{
+  select: {
+    id: true;
+    first_name: true;
+    last_name: true;
+    busy_from: true;
+    busy_to: true;
+    status: true;
+
+    employee_technology: {
+      select: {
+        technologies: true;
+      };
+    };
+
+    position: {
+      select: {
+        id: true;
+        name: true;
       };
     };
   };

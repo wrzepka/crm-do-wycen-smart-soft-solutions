@@ -122,7 +122,7 @@ export function DashboardSidebar() {
           <div className="space-y-1">
             <SidebarLink href="/dashboard/positions" icon={BriefcaseBusiness} label="Stanowiska" />
             <SidebarLink href="/dashboard/technologies" icon={Cpu} label="Technologie" />
-            <SidebarLink href="/dashboard/components" icon={Layers} label="Usługi" />
+            <SidebarLink href="/dashboard/services" icon={Layers} label="Usługi" />
           </div>
         </div>
 
