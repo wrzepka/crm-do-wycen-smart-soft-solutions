@@ -125,3 +125,10 @@ export const serviceTemplateResourceSelectionSchema = z.object({
 export const deleteServiceTemplateResourceSchema = z.object({
   id: z.string().cuid({ message: 'Nieprawidłowe ID zasobu szablonu' }),
 });
+
+export const createServiceTemplateWithResourcesSchema = newServiceTemplateSchema.extend({
+  resources: z
+    .array(newServiceTemplateResourceSchema.omit({ serviceTemplateId: true }))
+    .optional()
+    .default([]),
+});
