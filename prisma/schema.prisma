@@ -59,26 +59,26 @@ model employees {
   status              EmployeeStatus        @default(ACTIVE_AVAILABLE)
   position_id         Int?
   employee_technology employee_technology[]
-  position           positions?            @relation(fields: [position_id], references: [id], onUpdate: NoAction, map: "fk_employees_position")
+  position            positions?            @relation(fields: [position_id], references: [id], onUpdate: NoAction, map: "fk_employees_position")
   projects            projects[]
 
   @@index([position_id], map: "idx_employees_position_id")
 }
 
 model pricing_history {
-  id         Int               @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   client_id  Int
   project_id Int
-  quote_date DateTime          @default(dbgenerated("CURRENT_DATE")) @db.Date
-  quote_code String?           @unique @db.VarChar(50)
-  cost       Decimal?          @db.Decimal(12, 2)
-  currency   String?           @default("PLN") @db.VarChar(3)
-  status     String?           @default("draft") @db.VarChar(50)
-  is_paid    Boolean?          @default(false)
+  quote_date DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  quote_code String?  @unique @db.VarChar(50)
+  cost       Decimal? @db.Decimal(12, 2)
+  currency   String?  @default("PLN") @db.VarChar(3)
+  status     String?  @default("draft") @db.VarChar(50)
+  is_paid    Boolean? @default(false)
   notes      String?
 
-  client     clients           @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  project    projects          @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  client          clients          @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  project         projects         @relation(fields: [project_id], references: [id], onDelete: Cascade)
   pricingServices PricingService[]
 
   @@index([quote_code])
@@ -100,17 +100,15 @@ model project_details {
 }
 
 model projects {
-  id              Int               @id @default(autoincrement())
-  client_id       Int
-  employee_id     Int?
+  id          Int  @id @default(autoincrement())
+  client_id   Int
+  employee_id Int?
 
   pricing_history pricing_history[]
   project_details project_details[]
   client          clients           @relation(fields: [client_id], references: [id], onDelete: Cascade)
   employee        employees?        @relation(fields: [employee_id], references: [id])
-
 }
-
 
 model technologies {
   id                  Int                   @id @default(autoincrement())
@@ -179,41 +177,41 @@ model VerificationToken {
 }
 
 model positions {
-  id        Int                      @id @default(autoincrement())
-  name      String                   @unique @db.VarChar(100)
-  hourly_rate Decimal?               @db.Decimal(10, 2)
-  employees employees[]
+  id                       Int                       @id @default(autoincrement())
+  name                     String                    @unique @db.VarChar(100)
+  hourly_rate              Decimal?                  @db.Decimal(10, 2)
+  employees                employees[]
   serviceTemplateResources ServiceTemplateResource[]
   pricingServiceResources  PricingServiceResource[]
 }
 
-
 model ServiceTemplate {
-  id            String                 @id @default(cuid())
+  id            String                    @id @default(cuid())
   name          String
   description   String?
-  defaultMargin Int                    @default(20)
-  isActive      Boolean                @default(true)
+  defaultMargin Int                       @default(20)
+  isActive      Boolean                   @default(true)
   resources     ServiceTemplateResource[]
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
   @@map("service_templates")
 }
 
 model ServiceTemplateResource {
-  id                String           @id @default(cuid())
-  label             String
-  positionId        Int?
-  defaultUnitPrice  Decimal?         @db.Decimal(10, 2)
-  unit              String           @default("h")
-  estimatedHours    Decimal?         @db.Decimal(5, 2)
+  id               String   @id @default(cuid())
+  label            String
+  positionId       Int?
+  defaultUnitPrice Decimal? @db.Decimal(10, 2)
+  unit             String   @default("h")
+  estimatedHours   Decimal? @db.Decimal(5, 2)
 
-  serviceTemplate   ServiceTemplate  @relation(fields: [serviceTemplateId], references: [id], onDelete: Cascade)
+  serviceTemplate   ServiceTemplate @relation(fields: [serviceTemplateId], references: [id], onDelete: Cascade)
   serviceTemplateId String
-  position          positions?       @relation(fields: [positionId], references: [id])
+  position          positions?      @relation(fields: [positionId], references: [id])
 
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([serviceTemplateId])
   @@index([positionId])
@@ -221,46 +219,44 @@ model ServiceTemplateResource {
 }
 
 model PricingService {
-  id               Int               @id @default(autoincrement())
-  name             String
-  description      String?
-  net_price        Decimal           @db.Decimal(12, 2)
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  net_price   Decimal @db.Decimal(12, 2)
 
-  margin_amount    Decimal           @db.Decimal(12, 2)
+  margin_amount Decimal @db.Decimal(12, 2)
 
-  discount_amount  Decimal?          @db.Decimal(12, 2)
-  total_price      Decimal           @db.Decimal(12, 2)
+  discount_amount Decimal? @db.Decimal(12, 2)
+  total_price     Decimal  @db.Decimal(12, 2)
 
-  pricingHistory   pricing_history   @relation(fields: [pricingHistoryId], references: [id], onDelete: Cascade)
+  pricingHistory   pricing_history          @relation(fields: [pricingHistoryId], references: [id], onDelete: Cascade)
   pricingHistoryId Int
   serviceResources PricingServiceResource[]
 
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([pricingHistoryId])
   @@map("pricing_services")
 }
 
 model PricingServiceResource {
-  id               Int              @id @default(autoincrement())
-  label            String
-  positionId       Int?
-  unitPrice        Decimal          @db.Decimal(10, 2)
-  unit             String           @default("h")
-  hours            Decimal          @db.Decimal(5, 2)
-  totalCost        Decimal          @db.Decimal(10, 2)
+  id         Int     @id @default(autoincrement())
+  label      String
+  positionId Int?
+  unitPrice  Decimal @db.Decimal(10, 2)
+  unit       String  @default("h")
+  hours      Decimal @db.Decimal(5, 2)
+  totalCost  Decimal @db.Decimal(10, 2)
 
-  pricingService   PricingService   @relation(fields: [pricingServiceId], references: [id], onDelete: Cascade)
+  pricingService   PricingService @relation(fields: [pricingServiceId], references: [id], onDelete: Cascade)
   pricingServiceId Int
-  position         positions?       @relation(fields: [positionId], references: [id])
+  position         positions?     @relation(fields: [positionId], references: [id])
 
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([pricingServiceId])
   @@index([positionId])
   @@map("pricing_service_resources")
 }
-
-

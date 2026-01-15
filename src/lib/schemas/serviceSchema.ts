@@ -122,6 +122,28 @@ export const serviceTemplateResourceSelectionSchema = z.object({
 });
 
 // Schema for service template resource deletion
-export const deleteServiceTemplateResourceSchema = z.object({
-  id: z.string().cuid({ message: 'Nieprawidłowe ID zasobu szablonu' }),
+// export const deleteServiceTemplateResourceSchema = z.object({
+//   id: z.string().cuid({ message: 'Nieprawidłowe ID zasobu szablonu' }),
+// });
+
+export const createServiceTemplateWithResourcesSchema = newServiceTemplateSchema.extend({
+  resources: z
+    .array(newServiceTemplateResourceSchema.omit({ serviceTemplateId: true }))
+    .optional()
+    .default([]),
+});
+
+export const updateServiceTemplateWithResourcesSchema = updateServiceTemplateSchema.extend({
+  resources: z
+    .array(
+      z.union([
+        // Case 2: New resource
+        newServiceTemplateResourceSchema.omit({ serviceTemplateId: true }),
+
+        // Case 2: Resource exists:
+        updateServiceTemplateResourceSchema,
+      ]),
+    )
+    .optional()
+    .default([]),
 });
