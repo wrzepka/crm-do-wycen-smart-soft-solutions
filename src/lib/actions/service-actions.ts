@@ -10,7 +10,7 @@ import {
   UpdateServiceTemplateInput,
   NewResourceInput,
   DeleteServiceTemplateInput,
-} from '@/types/schemas';
+} from '@/types/services';
 import { prisma } from '@/lib/prisma-client';
 import { revalidatePath } from 'next/cache';
 
