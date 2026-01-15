@@ -3,11 +3,13 @@
 import {
   createServiceTemplateWithResourcesSchema,
   updateServiceTemplateWithResourcesSchema,
+  deleteServiceTemplateSchema,
 } from '@/lib/schemas/serviceSchema';
 import {
   CreateServiceTemplateInput,
   UpdateServiceTemplateInput,
   NewResourceInput,
+  DeleteServiceTemplateInput,
 } from '@/types/schemas';
 import { prisma } from '@/lib/prisma-client';
 import { revalidatePath } from 'next/cache';
@@ -117,5 +119,29 @@ export async function updateServiceTemplate(data: UpdateServiceTemplateInput) {
   } catch (error) {
     console.error('Template update error:', error);
     return { ok: false, error: 'Wystąpił błąd podczas aktualizacji schematu' };
+  }
+}
+
+export async function deleteServiceTemplate(data: DeleteServiceTemplateInput) {
+  const validation = deleteServiceTemplateSchema.safeParse(data);
+
+  if (!validation.success) {
+    const errors = validation.error.flatten();
+    return {
+      ok: false,
+      error: 'Błędy walidacji formularza',
+      fieldErrors: errors.fieldErrors,
+      formErrors: errors.formErrors,
+    };
+  }
+
+  try {
+    // It will also delete resources (OnDelete: Cascade)
+    await prisma.serviceTemplate.delete({
+      where: { id: validation.data.id },
+    });
+  } catch (error) {
+    console.error('Template delete error:', error);
+    return { ok: false, error: 'Wystąpił błąd podczas usuwania schematu' };
   }
 }

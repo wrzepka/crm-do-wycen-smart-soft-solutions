@@ -122,9 +122,9 @@ export const serviceTemplateResourceSelectionSchema = z.object({
 });
 
 // Schema for service template resource deletion
-export const deleteServiceTemplateResourceSchema = z.object({
-  id: z.string().cuid({ message: 'Nieprawidłowe ID zasobu szablonu' }),
-});
+// export const deleteServiceTemplateResourceSchema = z.object({
+//   id: z.string().cuid({ message: 'Nieprawidłowe ID zasobu szablonu' }),
+// });
 
 export const createServiceTemplateWithResourcesSchema = newServiceTemplateSchema.extend({
   resources: z
