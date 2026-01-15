@@ -132,3 +132,18 @@ export const createServiceTemplateWithResourcesSchema = newServiceTemplateSchema
     .optional()
     .default([]),
 });
+
+export const updateServiceTemplateWithResourcesSchema = updateServiceTemplateSchema.extend({
+  resources: z
+    .array(
+      z.union([
+        // Case 2: New resource
+        newServiceTemplateResourceSchema.omit({ serviceTemplateId: true }),
+
+        // Case 2: Resource exists:
+        updateServiceTemplateResourceSchema,
+      ]),
+    )
+    .optional()
+    .default([]),
+});
