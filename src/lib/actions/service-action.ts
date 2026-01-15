@@ -40,10 +40,10 @@ export async function createServiceTemplate(data: CreateServiceTemplateInput) {
     });
 
     revalidatePath('/dashboard/templates');
-    return { ok: true, message: 'Szablon usługi został utworzony pomyślnie.' };
+    return { ok: true, message: 'Pomyślnie utworzono szablon.' };
   } catch (error) {
     console.error('Template create error:', error);
-    return { ok: false, error: 'Wystąpił błąd podczas tworzenia schematu.' };
+    return { ok: false, error: 'Wystąpił błąd podczas tworzenia szablonu.' };
   }
 }
 
@@ -118,7 +118,7 @@ export async function updateServiceTemplate(data: UpdateServiceTemplateInput) {
     return { ok: true, message: 'Pomyślnie zaktualizowano szablon.' };
   } catch (error) {
     console.error('Template update error:', error);
-    return { ok: false, error: 'Wystąpił błąd podczas aktualizacji schematu' };
+    return { ok: false, error: 'Wystąpił błąd podczas aktualizacji szablonu' };
   }
 }
 
@@ -140,8 +140,11 @@ export async function deleteServiceTemplate(data: DeleteServiceTemplateInput) {
     await prisma.serviceTemplate.delete({
       where: { id: validation.data.id },
     });
+
+    revalidatePath('/dashboard/templates');
+    return { ok: true, message: 'Pomyślnie usunięto szablon.' };
   } catch (error) {
     console.error('Template delete error:', error);
-    return { ok: false, error: 'Wystąpił błąd podczas usuwania schematu' };
+    return { ok: false, error: 'Wystąpił błąd podczas usuwania szablonu' };
   }
 }
