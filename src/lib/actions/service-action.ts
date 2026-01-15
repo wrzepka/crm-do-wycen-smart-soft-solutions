@@ -25,24 +25,14 @@ export async function createServiceTemplate(data: CreateServiceTemplateInput) {
     };
   }
 
-  const { name, description, defaultMargin, isActive, resources } = validation.data;
+  const { resources, ...templateData } = validation.data;
 
   try {
     await prisma.serviceTemplate.create({
       data: {
-        name,
-        description,
-        defaultMargin,
-        isActive,
+        ...templateData,
         resources: {
-          create:
-            resources?.map((res) => ({
-              label: res.label,
-              unit: res.unit,
-              estimatedHours: res.estimatedHours,
-              defaultUnitPrice: res.defaultUnitPrice,
-              positionId: res.positionId,
-            })) || [],
+          create: resources || [],
         },
       },
     });
