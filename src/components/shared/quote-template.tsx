@@ -88,7 +88,7 @@ interface QuoteData {
   data: QuoteDataExtended;
 }
 
-export const QuoteTemplate = ({ data }: QuoteData) => {
+export function QuoteTemplate({ data }: QuoteData) {
   const VAT_RATE = 0.23; // TODO: move to file with const values
   const netTotal = Number(data.cost);
   const vatAmount = netTotal * VAT_RATE;
@@ -168,4 +168,4 @@ export const QuoteTemplate = ({ data }: QuoteData) => {
       </Page>
     </Document>
   );
-};
+}
