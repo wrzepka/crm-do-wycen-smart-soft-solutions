@@ -11,29 +11,34 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { ServiceForm, ServiceFormValues } from './service-form';
-import { ServiceMock } from './service-list-table';
+// import position type from service form
+import { ServiceForm, ServiceFormValues, PositionOption } from './service-form';
+import { ServiceTemplateDTO } from './service-list-table';
 
 interface ServiceSheetProps {
-  serviceToEdit?: ServiceMock | null;
+  serviceToEdit?: ServiceTemplateDTO | null;
+  positions: PositionOption[]; // added: list of positions needed for the form
   children?: React.ReactNode;
 }
 
-function mapServiceToForm(service: ServiceMock): Partial<ServiceFormValues> {
+// map data from table dto to form values
+function mapServiceToForm(service: ServiceTemplateDTO): Partial<ServiceFormValues> {
   return {
+    id: service.id, // crucial: missing id caused create instead of update
     name: service.name,
-    categoryId: service.categoryId,
-    billingType: service.billingType,
-    status: service.status,
-    unit: service.unit,
-    basePrice: service.basePrice,
-    description: service.description,
-    markup: 30,
-    components: [],
+    description: service.description || '',
+    defaultMargin: service.defaultMargin,
+    isActive: service.isActive,
+    resources: service.resources?.map((res) => ({
+      label: res.label || 'Zasób',
+      // convert to string as select component operates on strings
+      positionId: res.positionId ? String(res.positionId) : null,
+      estimatedHours: Number(res.estimatedHours || 0),
+    })) || [],
   };
 }
 
-export function ServiceSheet({ serviceToEdit, children }: ServiceSheetProps) {
+export function ServiceSheet({ serviceToEdit, positions, children }: ServiceSheetProps) {
   const [open, setOpen] = useState(false);
   const isEditMode = !!serviceToEdit;
 
@@ -50,21 +55,22 @@ export function ServiceSheet({ serviceToEdit, children }: ServiceSheetProps) {
         )}
       </SheetTrigger>
 
-      <SheetContent className="bg-[#0B1121] border-l border-slate-800 text-white sm:max-w-2xl w-full flex flex-col h-full">
-        <SheetHeader className="flex-shrink-0 mb-4">
+      <SheetContent className="bg-[#0B1121] border-l border-slate-800 text-white sm:max-w-2xl w-full flex flex-col h-full overflow-y-auto">
+        <SheetHeader className="flex-shrink-0 mb-6">
           <SheetTitle className="text-white text-xl font-bold">
             {isEditMode ? 'Edytuj usługę' : 'Nowa usługa'}
           </SheetTitle>
           <SheetDescription className="text-slate-400">
             {isEditMode
-              ? 'Zmodyfikuj parametry i cennik usługi.'
-              : 'Zdefiniuj nową usługę lub produkt w katalogu.'}
+              ? 'Zmodyfikuj parametry szablonu.'
+              : 'Zdefiniuj nowy szablon usługi w systemie.'}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto -mr-6 pr-6 pl-1 pb-6">
+        <div className="flex-1 pb-10">
           <ServiceForm
             initialData={serviceToEdit ? mapServiceToForm(serviceToEdit) : undefined}
+            availablePositions={positions}
             onSuccess={() => setOpen(false)}
           />
         </div>

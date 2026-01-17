@@ -1,123 +1,173 @@
-'use client';
-
-import { ServiceListTable, ServiceMock } from '@/components/dashboard/services/service-list-table';
+import { prisma } from '@/lib/prisma-client';
+import {
+  ServiceListTable,
+  ServiceTemplateDTO,
+} from '@/components/dashboard/services/service-list-table';
 import { ServiceSheet } from '@/components/dashboard/services/service-sheet';
 import { ServiceFilters } from '@/components/dashboard/services/service-filters';
 import { StatCard } from '@/components/shared/stat-card';
-import { Box, Layers, CreditCard, CheckCircle } from 'lucide-react';
+import { DataTablePagination } from '@/components/shared/data-pagination';
+import { Box, CheckCircle, ArchiveX, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-const MOCK_SERVICES: ServiceMock[] = [
-  {
-    id: '1',
-    name: 'Senior Backend Developer (Python)',
-    billingType: 'TIME_MATERIAL',
-    categoryId: '1',
-    description: 'Starszy programista backend, stack Python/Django/FastAPI.',
-    basePrice: 0,
-    finalPrice: 280,
-    unit: 'h',
-    status: 'ACTIVE',
-  },
-  {
-    id: '2',
-    name: 'Licencja CRM - Enterprise',
-    billingType: 'SUBSCRIPTION',
-    categoryId: '1',
-    description: 'Miesięczny dostęp do platformy dla firm > 50 osób.',
-    basePrice: 2500,
-    unit: 'msc',
-    status: 'ACTIVE',
-  },
-  {
-    id: '3',
-    name: 'Warsztaty Discovery (UX/UI)',
-    billingType: 'FIXED_PRICE',
-    categoryId: '2',
-    description: 'Kompletna analiza wymagań i makiety low-fidelity.',
-    basePrice: 5000,
-    unit: 'kpl.',
-    status: 'ACTIVE',
-  },
-  {
-    id: '4',
-    name: 'Konsultacje DevOps',
-    billingType: 'TIME_MATERIAL',
-    categoryId: '3',
-    description: 'Wsparcie w konfiguracji CI/CD i chmury AWS.',
-    basePrice: 0,
-    finalPrice: 350,
-    unit: 'h',
-    status: 'DRAFT',
-  },
-  {
-    id: '5',
-    name: 'Hosting VPS Standard',
-    billingType: 'SUBSCRIPTION',
-    categoryId: '3',
-    description: 'Utrzymanie serwera wirtualnego (4 vCPU, 8GB RAM).',
-    basePrice: 200,
-    unit: 'msc',
-    status: 'ACTIVE',
-  },
-];
+export default async function ServicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; query?: string; isActive?: string }>;
+}) {
+  // parse search params for nextjs 15
+  const { page, query, isActive } = await searchParams;
 
-export default function ServicesPage() {
-  const stats = {
-    total: MOCK_SERVICES.length,
-    timeMaterial: MOCK_SERVICES.filter((s) => s.billingType === 'TIME_MATERIAL').length,
-    fixed: MOCK_SERVICES.filter(
-      (s) => s.billingType === 'FIXED_PRICE' || s.billingType === 'SUBSCRIPTION',
-    ).length,
-    active: MOCK_SERVICES.filter((s) => s.status === 'ACTIVE').length,
+  // setup pagination variables
+  const currentPage = Math.max(1, Number(page) || 1);
+  const pageSize = 10;
+  const skip = (currentPage - 1) * pageSize;
+
+  // define filter logic
+  let isActiveFilter: boolean | undefined = undefined;
+  if (isActive === 'true') isActiveFilter = true;
+  if (isActive === 'false') isActiveFilter = false;
+
+  const whereCondition = {
+    name: query ? { contains: query, mode: 'insensitive' as const } : undefined,
+    isActive: isActiveFilter,
   };
 
+  // fetch all data in parallel
+  const [
+    rawServices, // table data
+    filteredCount, // count for pagination
+    rawPositions, // form data
+    totalGlobal, // stat all
+    activeGlobal, // stat active
+    inactiveGlobal, // stat inactive
+  ] = await Promise.all([
+    // fetch paginated services
+    prisma.serviceTemplate.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { resources: true },
+      where: whereCondition,
+      skip: skip,
+      take: pageSize,
+    }),
+    // count filtered results
+    prisma.serviceTemplate.count({
+      where: whereCondition,
+    }),
+    // fetch positions
+    prisma.positions.findMany({
+      orderBy: { name: 'asc' },
+    }),
+    // global stats
+    prisma.serviceTemplate.count(),
+    prisma.serviceTemplate.count({ where: { isActive: true } }),
+    prisma.serviceTemplate.count({ where: { isActive: false } }),
+  ]);
+
+  // calculate total pages
+  const totalPages = Math.ceil(filteredCount / pageSize);
+
+  // format positions data
+  const positions = rawPositions.map((pos) => ({
+    id: pos.id,
+    name: pos.name,
+    hourlyRate: pos.hourly_rate ? Number(pos.hourly_rate) : 0,
+  }));
+
+  // transform services data and calculate prices
+  const data: ServiceTemplateDTO[] = rawServices.map((service) => {
+    // calculate base cost dynamically
+    const totalBaseCost = service.resources.reduce((acc, res) => {
+      const hours = res.estimatedHours ? Number(res.estimatedHours) : 0;
+      let rate = res.defaultUnitPrice ? Number(res.defaultUnitPrice) : 0;
+
+      if (rate === 0 && res.positionId) {
+        const pos = rawPositions.find((p) => p.id === res.positionId);
+        if (pos?.hourly_rate) rate = Number(pos.hourly_rate);
+      }
+
+      return acc + hours * rate;
+    }, 0);
+
+    const marginPercent = service.defaultMargin || 0;
+    const estimatedPrice = totalBaseCost + totalBaseCost * (marginPercent / 100);
+
+    return {
+      id: service.id,
+      name: service.name,
+      description: service.description,
+      defaultMargin: marginPercent,
+      isActive: service.isActive,
+      estimatedPrice: Math.round(estimatedPrice),
+      resources: service.resources.map((r) => ({
+        id: r.id,
+        label: r.label,
+        positionId: r.positionId ? String(r.positionId) : null,
+        estimatedHours: r.estimatedHours ? Number(r.estimatedHours) : 0,
+        defaultUnitPrice: r.defaultUnitPrice ? Number(r.defaultUnitPrice) : 0,
+      })),
+    };
+  });
+
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
+    <div className="p-8 space-y-8 min-h-full bg-slate-50/50 dark:bg-[#020817]">
+      {/* page header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Katalog Usług
-          </h2>
-          <p className="text-muted-foreground text-slate-500">
-            Zarządzaj usługami, stawkami i produktami w jednym miejscu.
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Usługi
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
+            Zarządzaj szablonami wycen i usługami w jednym miejscu.
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <ServiceSheet />
+          <ServiceSheet positions={positions}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2 cursor-pointer shadow-sm">
+              <Plus size={18} />
+              Dodaj usługę
+            </Button>
+          </ServiceSheet>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* global stats cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           title="Wszystkie Usługi"
-          value={stats.total}
+          value={totalGlobal}
           icon={<Box className="text-slate-900 dark:text-white" />}
           description="Pozycje w katalogu"
         />
         <StatCard
           title="Aktywne"
-          value={stats.active}
-          icon={<CheckCircle className="text-emerald-600 dark:text-white" />}
+          value={activeGlobal}
+          icon={<CheckCircle className="text-emerald-600 dark:text-emerald-400" />}
           className="border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-900/10"
-          description="Gotowe do ofertowania"
+          description="Gotowe do użycia"
         />
         <StatCard
-          title="Role (T&M)"
-          value={stats.timeMaterial}
-          icon={<Layers className="text-blue-600 dark:text-white" />}
-          description="Rozliczane godzinowo"
-        />
-        <StatCard
-          title="Produkty / Abo"
-          value={stats.fixed}
-          icon={<CreditCard className="text-purple-600 dark:text-white" />}
-          className="border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-900/10"
-          description="Stała cena i subskrypcje"
+          title="Nieaktywne"
+          value={inactiveGlobal}
+          icon={<ArchiveX className="text-slate-500 dark:text-slate-400" />}
+          className="border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/20 opacity-80"
+          description="Szkice i zarchiwizowane"
         />
       </div>
 
-      <ServiceFilters />
-      <ServiceListTable data={MOCK_SERVICES} />
+      {/* table and filters section */}
+      <div className="space-y-4">
+        <ServiceFilters />
+
+        <div className="bg-white dark:bg-[#0B1121] rounded-md border border-slate-200 dark:border-slate-800">
+          <ServiceListTable data={data} positions={positions} />
+        </div>
+
+        {/* pagination controls */}
+        <div className="mt-4 flex justify-center">
+          <DataTablePagination currentPage={currentPage} totalPages={totalPages} />
+        </div>
+      </div>
     </div>
   );
 }
