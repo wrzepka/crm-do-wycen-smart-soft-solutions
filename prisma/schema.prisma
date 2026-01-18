@@ -226,7 +226,7 @@ model ServiceTemplateResource {
   positionId Int?
 
   unit               String   @default("h")
-  estimated_quantity Decimal? @db.Decimal(5, 2)
+  estimated_quantity Decimal? @db.Decimal(10, 2)
   // Optional price override (if == NULL -> take default_rate from position)
   price_override     Decimal? @db.Decimal(10, 2)
 

@@ -44,11 +44,14 @@ export const serviceTemplateResourceBaseSchema = z.object({
   unit: z.string().default('h'),
 
   estimated_quantity: nullableNumberSchema.refine(
-    (val) => val === null || val === undefined || val < 1000,
-    { message: 'Maksymalna ilość to 999.99' },
+    (val) => val === null || val === undefined || val < 100000000,
+    { message: 'Maksymalna ilość to 99 999 999,99' },
   ),
 
-  price_override: nullableNumberSchema,
+  price_override: nullableNumberSchema.refine(
+    (val) => val === null || val === undefined || val < 100000000,
+    { message: 'Cena nie może przekraczać 99 999 999.99' },
+  ),
 });
 
 const resourceInFormSchema = serviceTemplateResourceBaseSchema;
