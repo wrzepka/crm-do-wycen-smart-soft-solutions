@@ -65,20 +65,35 @@ model employees {
   @@index([position_id], map: "idx_employees_position_id")
 }
 
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  CANCELED
+}
+
 model pricing_history {
-  id         Int      @id @default(autoincrement())
+  id         Int  @id @default(autoincrement())
   client_id  Int
-  project_id Int
+  project_id Int?
+
   quote_date DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
   quote_code String?  @unique @db.VarChar(50)
-  cost       Decimal? @db.Decimal(12, 2)
-  currency   String?  @default("PLN") @db.VarChar(3)
-  status     String?  @default("draft") @db.VarChar(50)
-  is_paid    Boolean? @default(false)
-  notes      String?
+
+  subtotal_net Decimal @default(0) @db.Decimal(12, 2) // sum of all services totalNets
+  discount     Decimal @default(0) @db.Decimal(12, 2) // global discount (not sum of services discounts)
+  total_net    Decimal @default(0) @db.Decimal(12, 2) // subtotal_net - discount
+  vat_rate     Int     @default(23)
+  total_gross  Decimal @default(0) @db.Decimal(12, 2) // total_net * 1.vat_rate
+  total_cost   Decimal @default(0) @db.Decimal(12, 2) // sum of all services costs
+
+  currency String?     @default("PLN") @db.VarChar(3)
+  status   QuoteStatus @default(DRAFT)
+  notes    String?
 
   client          clients          @relation(fields: [client_id], references: [id], onDelete: Cascade)
-  project         projects         @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project         projects?        @relation(fields: [project_id], references: [id], onDelete: Cascade)
   pricingServices PricingService[]
 
   @@index([quote_code])
@@ -179,32 +194,41 @@ model VerificationToken {
 model positions {
   id                       Int                       @id @default(autoincrement())
   name                     String                    @unique @db.VarChar(100)
-  hourly_rate              Decimal?                  @db.Decimal(10, 2)
+  // Cost (What 'We' are paying)
+  cost                     Decimal                   @default(0) @db.Decimal(10, 2)
+  // Price (What client pays)
+  rate                     Decimal                   @default(0) @db.Decimal(10, 2)
   employees                employees[]
   serviceTemplateResources ServiceTemplateResource[]
   pricingServiceResources  PricingServiceResource[]
+
+  // Idk if we use that
+  // createdAt   DateTime @default(now()) @map("created_at")
+  // updatedAt   DateTime @updatedAt @map("updated_at")
 }
 
 model ServiceTemplate {
-  id            String                    @id @default(cuid())
-  name          String
-  description   String?
-  defaultMargin Int                       @default(20)
-  isActive      Boolean                   @default(true)
-  resources     ServiceTemplateResource[]
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  isActive  Boolean                   @default(true)
+  resources ServiceTemplateResource[]
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
 
   @@map("service_templates")
 }
 
 model ServiceTemplateResource {
-  id               String   @id @default(cuid())
-  label            String
-  positionId       Int?
-  defaultUnitPrice Decimal? @db.Decimal(10, 2)
-  unit             String   @default("h")
-  estimatedHours   Decimal? @db.Decimal(5, 2)
+  id         String @id @default(cuid())
+  label      String
+  positionId Int?
+
+  unit               String   @default("h")
+  estimated_quantity Decimal? @db.Decimal(5, 2)
+  // Optional price override (if == NULL -> take default_rate from position)
+  price_override     Decimal? @db.Decimal(10, 2)
 
   serviceTemplate   ServiceTemplate @relation(fields: [serviceTemplateId], references: [id], onDelete: Cascade)
   serviceTemplateId String
@@ -222,12 +246,11 @@ model PricingService {
   id          Int     @id @default(autoincrement())
   name        String
   description String?
-  net_price   Decimal @db.Decimal(12, 2)
 
-  margin_amount Decimal @db.Decimal(12, 2)
-
-  discount_amount Decimal? @db.Decimal(12, 2)
-  total_price     Decimal  @db.Decimal(12, 2)
+  subtotal_net Decimal @default(0) @db.Decimal(12, 2) // sum of 'total_net' of service resources
+  discount     Decimal @default(0) @db.Decimal(12, 2) // discount for that service
+  total_net    Decimal @default(0) @db.Decimal(12, 2) // subtotal_net - discount
+  total_cost   Decimal @default(0) @db.Decimal(12, 2) // sum of service resources costs
 
   pricingHistory   pricing_history          @relation(fields: [pricingHistoryId], references: [id], onDelete: Cascade)
   pricingHistoryId Int
@@ -241,13 +264,18 @@ model PricingService {
 }
 
 model PricingServiceResource {
-  id         Int     @id @default(autoincrement())
+  id         Int    @id @default(autoincrement())
   label      String
   positionId Int?
-  unitPrice  Decimal @db.Decimal(10, 2)
-  unit       String  @default("h")
-  hours      Decimal @db.Decimal(5, 2)
-  totalCost  Decimal @db.Decimal(10, 2)
+
+  unit     String  @default("h")
+  quantity Decimal @db.Decimal(10, 2) // Amount of specified unit
+
+  unit_price Decimal @db.Decimal(10, 2) // Unit price of what Client pays (snapshot from position.default_rate or service_template_resource.price_override(higher priority))
+  unit_cost  Decimal @db.Decimal(10, 2) // Unit cost of what 'We' are paying (snapshot from position.default_cost)
+
+  total_net  Decimal @db.Decimal(12, 2) // unit_price * quantity
+  total_cost Decimal @db.Decimal(12, 2) // unit_cost * quantity
 
   pricingService   PricingService @relation(fields: [pricingServiceId], references: [id], onDelete: Cascade)
   pricingServiceId Int
