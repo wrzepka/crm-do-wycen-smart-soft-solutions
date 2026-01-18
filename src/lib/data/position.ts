@@ -57,7 +57,8 @@ export async function getPositionsWithHourlyRate() {
       select: {
         id: true,
         name: true,
-        hourly_rate: true,
+        cost: true,
+        rate: true,
         _count: {
           select: {
             employees: true,
