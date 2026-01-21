@@ -1,10 +1,14 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
-import { QuoteDataExtended } from '@/types/quote';
+import { QuoteDataForPdf } from '@/types/quote';
+import path from 'path';
 
 // Font installation
 Font.register({
   family: 'Roboto',
-  fonts: [{ src: '/fonts/Roboto-Regular.ttf' }, { src: '/fonts/Roboto-Bold.ttf', fontWeight: 700 }],
+  fonts: [
+    { src: path.join(process.cwd(), 'public', 'fonts', 'Roboto-Regular.ttf') },
+    { src: path.join(process.cwd(), 'public', 'fonts', 'Roboto-Bold.ttf'), fontWeight: 'bold' },
+  ],
 });
 
 // Styles
@@ -50,6 +54,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
     alignItems: 'center',
     minHeight: 24,
+    paddingLeft: 5,
   },
   colDesc: { width: '45%', paddingLeft: 8, paddingRight: 4 },
   colQty: { width: '15%', textAlign: 'center' },
@@ -59,11 +64,11 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 700 },
   textSmall: { fontSize: 9 },
 
-  // SERVICE GROUP HEADER (Szary pasek)
+  // SERVICE GROUP HEADER
   serviceGroupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f1f5f9',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
@@ -75,6 +80,21 @@ const styles = StyleSheet.create({
     color: '#475569',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  originalPrice: {
+    fontSize: 9,
+    color: '#777',
+    textDecoration: 'line-through',
+    marginRight: 6,
+  },
+  finalPrice: {
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 
   // SUMMARY & FOOTER
@@ -111,12 +131,17 @@ const styles = StyleSheet.create({
 });
 
 interface QuoteData {
-  data: QuoteDataExtended;
+  data: QuoteDataForPdf;
 }
 
 export function QuoteTemplate({ data }: QuoteData) {
-  // const VAT_RATE = 0.23;
+  const vatRate = data.vat_rate || 0.23;
   const currency = data.currency || 'PLN';
+  const subTotalNet = data.subtotal_net;
+  const totalNet = data.total_net;
+  const totalGross = data.total_gross;
+  const globalDiscount = data.discount;
+  const vatAmount = totalNet.mul(vatRate).div(100);
 
   // Provider data (hardcoded for now)
   const provider = {
@@ -126,7 +151,6 @@ export function QuoteTemplate({ data }: QuoteData) {
     nip: 'PL5250000000',
   };
 
-  // TODO: fix prices
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -196,9 +220,19 @@ export function QuoteTemplate({ data }: QuoteData) {
               {/* Service */}
               <View style={styles.serviceGroupHeader}>
                 <Text style={styles.groupHeaderText}>{service.name}</Text>
-                <Text style={styles.groupHeaderText}>
-                  {Number(service.total_price).toFixed(2)} {currency}
-                </Text>
+                <View style={styles.priceContainer}>
+                  {/* If there is discount, show old price with line through*/}
+                  {Number(service.discount) > 0 && (
+                    <Text style={styles.originalPrice}>
+                      {Number(service.subtotal_net).toFixed(2)}
+                    </Text>
+                  )}
+
+                  {/* TotalNet - always visible */}
+                  <Text style={styles.finalPrice}>
+                    {Number(service.total_net).toFixed(2)} {currency}
+                  </Text>
+                </View>
               </View>
 
               {/* Sub Services list */}
@@ -211,13 +245,13 @@ export function QuoteTemplate({ data }: QuoteData) {
                     )}
                   </View>
                   <Text style={[styles.colQty, styles.textSmall]}>
-                    {Number(res.hours)} [{res.unit}]
+                    {Number(res.quantity)} [{res.unit}]
                   </Text>
                   <Text style={[styles.colRate, styles.textSmall]}>
-                    {Number(res.unitPrice).toFixed(2)}
+                    {Number(res.unit_price).toFixed(2)}
                   </Text>
                   <Text style={[styles.colTotal, styles.textSmall]}>
-                    {(Number(res.hours) * Number(res.unitPrice)).toFixed(2)}
+                    {(Number(res.quantity) * Number(res.unit_price)).toFixed(2)}
                   </Text>
                 </View>
               ))}
@@ -228,23 +262,27 @@ export function QuoteTemplate({ data }: QuoteData) {
         {/* Summary */}
         <View style={styles.summaryContainer}>
           {/* If there is any discount, show price without discount first */}
-          {1 > 0 && (
+          {globalDiscount.gt(0) && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Wartość usług:</Text>
-              <Text style={styles.summaryValue}>1000 {currency}</Text>
+              <Text style={styles.summaryValue}>
+                {Number(subTotalNet).toFixed(2)} {currency}
+              </Text>
             </View>
           )}
 
           {/* Discount */}
-          {1 > 0 && (
+          {globalDiscount.gt(0) && (
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: '#ef4444' }]}>Rabat:</Text>
-              <Text style={[styles.summaryValue, { color: '#ef4444' }]}>- 50 {currency}</Text>
+              <Text style={[styles.summaryValue, { color: '#ef4444' }]}>
+                {Number(globalDiscount).toFixed(2)} {currency}
+              </Text>
             </View>
           )}
 
           {/* Separator if there is any discount*/}
-          {1 > 0 && (
+          {globalDiscount.gt(0) && (
             <View
               style={{ height: 1, backgroundColor: '#e2e8f0', marginVertical: 4, width: '100%' }}
             />
@@ -252,11 +290,15 @@ export function QuoteTemplate({ data }: QuoteData) {
 
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Suma Netto:</Text>
-            <Text style={styles.summaryValue}>1111 {currency}</Text>
+            <Text style={styles.summaryValue}>
+              {Number(totalNet).toFixed(2)} {currency}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>VAT (23%):</Text>
-            <Text style={styles.summaryValue}>2222 {currency}</Text>
+            <Text style={styles.summaryValue}>
+              {Number(vatAmount).toFixed(2)} {currency}
+            </Text>
           </View>
         </View>
 
@@ -272,7 +314,9 @@ export function QuoteTemplate({ data }: QuoteData) {
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={styles.labelMeta}>DO ZAPŁATY:</Text>
-            <Text style={styles.paymentTotalBig}>3333 {currency}</Text>
+            <Text style={styles.paymentTotalBig}>
+              {Number(totalGross).toFixed(2)} {currency}
+            </Text>
           </View>
         </View>
 

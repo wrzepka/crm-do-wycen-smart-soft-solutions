@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { auth } from '@/lib/auth'; // Twoja konfiguracja auth
+import { auth } from '@/lib/auth';
 import { constants } from 'fs';
 import { access } from 'fs/promises';
 
 const getQuotesDir = () => path.join(process.cwd(), 'storage', 'quotes');
 
-export async function GET(req: NextRequest, { params }: { params: { filename: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ filename: string }> }) {
   const session = await auth();
   if (!session) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  // TODO: Check roles
+  const params = await props.params;
+
+  if (!params?.filename) {
+    return new NextResponse('Brak nazwy pliku', { status: 400 });
+  }
 
   // protect against path traversal
   const safeFilename = path.basename(params.filename);
@@ -32,7 +36,6 @@ export async function GET(req: NextRequest, { params }: { params: { filename: st
         // 'inline' = open in the browser
         // 'attachment' = force downloading
         'Content-Disposition': `inline; filename="${safeFilename}"`,
-        // delete old data
         'Cache-Control': 'private, max-age=0, must-revalidate',
       },
     });

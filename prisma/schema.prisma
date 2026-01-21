@@ -85,7 +85,7 @@ model pricing_history {
   discount     Decimal @default(0) @db.Decimal(12, 2) // global discount (not sum of services discounts)
   total_net    Decimal @default(0) @db.Decimal(12, 2) // subtotal_net - discount
   vat_rate     Int     @default(23)
-  total_gross  Decimal @default(0) @db.Decimal(12, 2) // total_net * 1.vat_rate
+  total_gross  Decimal @default(0) @db.Decimal(12, 2) // total_net * vat_rate
   total_cost   Decimal @default(0) @db.Decimal(12, 2) // sum of all services costs
 
   currency String?     @default("PLN") @db.VarChar(3)
