@@ -15,7 +15,8 @@ import { NewPositionInput, UpdatePositionInput } from '@/types/position';
 function serializePosition(position: positions) {
   return {
     ...position,
-    hourly_rate: position.hourly_rate ? position.hourly_rate.toNumber() : null,
+    cost: position.cost ? position.cost.toNumber() : null,
+    rate: position.rate ? position.rate.toNumber() : null,
   };
 }
 
@@ -37,7 +38,8 @@ export async function createPosition(data: NewPositionInput) {
     const position = await prisma.positions.create({
       data: {
         name: validation.data.name,
-        hourly_rate: validation.data.hourly_rate,
+        rate: validation.data.rate ?? 0,
+        cost: validation.data.cost ?? 0,
       },
     });
 
@@ -89,7 +91,8 @@ export async function updatePosition(id: number, data: UpdatePositionInput) {
       where: { id: id },
       data: {
         name: validation.data.name,
-        hourly_rate: validation.data.hourly_rate,
+        rate: validation.data.rate ?? 0,
+        cost: validation.data.cost ?? 0,
       },
     });
 

@@ -15,8 +15,9 @@ import { PositionSheet } from '@/components/dashboard/positions/position-sheet';
 import { useIsFiltered } from '@/lib/hooks';
 
 // custom type to handle prisma decimal serialization issue since client components expect plain numbers
-type SerializedPosition = Omit<positions, 'hourly_rate'> & {
-  hourly_rate: number | null;
+type SerializedPosition = Omit<positions, 'rate' | 'cost'> & {
+  rate: number;
+  cost: number;
 };
 
 interface Props {
@@ -32,7 +33,8 @@ export function PositionListTable({ data }: Props) {
         <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
           <TableRow className="border-slate-200 dark:border-slate-800 hover:bg-transparent">
             <TableHead className="text-slate-500 font-semibold pl-6">Nazwa stanowiska</TableHead>
-            <TableHead className="text-slate-500 font-semibold">Stawka godzinowa</TableHead>
+            <TableHead className="text-slate-500 font-semibold">Stawka pracownicza</TableHead>
+            <TableHead className="text-slate-500 font-semibold">Stawka przy usługach</TableHead>
             <TableHead className="text-right text-slate-500 font-semibold pr-6">Akcje</TableHead>
           </TableRow>
         </TableHeader>
@@ -58,9 +60,15 @@ export function PositionListTable({ data }: Props) {
                   <div className="flex flex-col gap-1.5">
                     <span className="text-slate-400 font-mono">
                       {/* formatting number to 2 decimal places with currency */}
-                      {position.hourly_rate !== null
-                        ? `${position.hourly_rate.toFixed(2)} PLN/h`
-                        : '-'}
+                      {position.cost !== null ? `${position.cost.toFixed(2)} PLN/h` : '-'}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-slate-400 font-mono">
+                      {/* formatting number to 2 decimal places with currency */}
+                      {position.rate !== null ? `${position.rate.toFixed(2)} PLN/h` : '-'}
                     </span>
                   </div>
                 </TableCell>

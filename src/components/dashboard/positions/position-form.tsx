@@ -44,7 +44,8 @@ export function PositionForm({ initialData, onSuccess }: PositionFormProps) {
     resolver: zodResolver(newPositionSchema),
     defaultValues: {
       name: initialData?.name || '',
-      hourly_rate: initialData?.hourly_rate ? String(initialData.hourly_rate) : '',
+      cost: initialData?.cost ? String(initialData.cost) : '',
+      rate: initialData?.rate ? String(initialData.rate) : '',
     },
   });
 
@@ -101,12 +102,12 @@ export function PositionForm({ initialData, onSuccess }: PositionFormProps) {
 
             <FormField
               control={form.control}
-              name="hourly_rate"
+              name="cost"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs text-slate-500 flex items-center gap-1">
                     <Banknote size={14} className="text-slate-400" />
-                    Stawka godzinowa (PLN)
+                    Stawka pracownicza (PLN)
                   </FormLabel>
                   <FormControl>
                     {/* using new custom number input component */}
@@ -114,8 +115,34 @@ export function PositionForm({ initialData, onSuccess }: PositionFormProps) {
                       placeholder="0.00"
                       step={0.01}
                       min={0}
-                      // passing react hook form props directly (value, onChange, ref, onBlur etc)
+                      // passing react hook form props directly (onChange, ref, onBlur etc.)
                       {...field}
+                      value={(field.value as string | number) ?? ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="rate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-slate-500 flex items-center gap-1">
+                    <Banknote size={14} className="text-slate-400" />
+                    Stawka dla klienta (PLN)
+                  </FormLabel>
+                  <FormControl>
+                    {/* using new custom number input component */}
+                    <NumberInput
+                      placeholder="0.00"
+                      step={0.01}
+                      min={0}
+                      // passing react hook form props directly (onChange, ref, onBlur etc.)
+                      {...field}
+                      value={(field.value as string | number) ?? ''}
                     />
                   </FormControl>
                   <FormMessage />
