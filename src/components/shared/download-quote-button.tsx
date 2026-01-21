@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, FileDown } from 'lucide-react';
-import { downloadQuotePdfAction } from '@/lib/actions/pdf-actions';
+import { generateQuotePdfAction } from '@/lib/actions/pdf-actions';
 
 // TODO: move to specified folder (/quotes)?
 // TODO: use zod validation for id in future (it is not developed yet)
@@ -15,7 +15,7 @@ export function DownloadQuoteButton({ quoteId }: { quoteId: string }) {
     setIsLoading(true);
 
     try {
-      const result = await downloadQuotePdfAction(Number(quoteId));
+      const result = await generateQuotePdfAction(Number(quoteId));
 
       if (result.success && result.data) {
         // Base65 -> Blob -> Link conversion
