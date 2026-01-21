@@ -94,7 +94,7 @@ export async function sendExistingQuotePdfAction(quoteId: number) {
       data: { status: 'SENT' },
     });
 
-    revalidatePath(`/quotes/${quoteId}`);
+    revalidatePath(`/dashboard/quotes`);
     return { ok: true, message: 'Pomyślnie wysłano wycenę.' };
   } catch (error) {
     console.error('Quote sending error:', error);
