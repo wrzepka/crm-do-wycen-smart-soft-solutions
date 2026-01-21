@@ -1,20 +1,21 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/prisma-client';
 import {
   createServiceTemplateWithResourcesSchema,
   updateServiceTemplateWithResourcesSchema,
   deleteServiceTemplateSchema,
 } from '@/lib/schemas/serviceSchema';
-import {
+import type {
   CreateServiceTemplateInput,
   UpdateServiceTemplateInput,
-  NewResourceInput,
   DeleteServiceTemplateInput,
 } from '@/types/services';
-import { prisma } from '@/lib/prisma-client';
-import { revalidatePath } from 'next/cache';
 
 export async function createServiceTemplate(data: CreateServiceTemplateInput) {
+  // TODO: Auth check
+
   const validation = createServiceTemplateWithResourcesSchema.safeParse(data);
 
   if (!validation.success) {
@@ -48,6 +49,8 @@ export async function createServiceTemplate(data: CreateServiceTemplateInput) {
 }
 
 export async function updateServiceTemplate(data: UpdateServiceTemplateInput) {
+  // TODO: Auth check
+
   const validation = updateServiceTemplateWithResourcesSchema.safeParse(data);
 
   if (!validation.success) {
@@ -64,20 +67,15 @@ export async function updateServiceTemplate(data: UpdateServiceTemplateInput) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      // Update main record from serviceTemplate table
+      // Update main service template table
       await tx.serviceTemplate.update({
-        where: {
-          id: templateId,
-        },
+        where: { id: templateId },
         data: templateData,
       });
 
-      // Resources:
-      const resourceIdsToKeep = resources
-        .filter((r) => 'id' in r && r.id) // check if object contains id (Type Guard)
-        .map((r) => (r as { id: string }).id);
+      const resourceIdsToKeep = resources.map((r) => r.id).filter((id): id is string => !!id);
 
-      // Delete resources positions from table that are not listed in input data.
+      // Clean up sub services that are not listed in the form
       await tx.serviceTemplateResource.deleteMany({
         where: {
           serviceTemplateId: templateId,
@@ -87,26 +85,30 @@ export async function updateServiceTemplate(data: UpdateServiceTemplateInput) {
         },
       });
 
-      // Update resources. If row is already in table, update that row, otherwise create new resource position
-      for (const resource of resources) {
-        if ('id' in resource && resource.id) {
-          // id exists, so update that row
-          const { id: resourceId, ...resourceData } = resource;
-
+      // check every resource
+      for (const res of resources) {
+        if (res.id) {
+          // Update existing service element
           await tx.serviceTemplateResource.update({
-            where: {
-              id: resourceId,
+            where: { id: res.id },
+            data: {
+              label: res.label,
+              unit: res.unit,
+              positionId: res.positionId,
+              estimated_quantity: res.estimated_quantity,
+              price_override: res.price_override,
             },
-            data: resourceData,
           });
         } else {
-          // create new row
-          const newResource = resource as NewResourceInput; // type cast, to inform TS, that data is valid and safe
-
+          // Create new elements of service
           await tx.serviceTemplateResource.create({
             data: {
-              ...newResource,
               serviceTemplateId: templateId,
+              label: res.label,
+              unit: res.unit,
+              positionId: res.positionId,
+              estimated_quantity: res.estimated_quantity,
+              price_override: res.price_override,
             },
           });
         }
@@ -114,7 +116,6 @@ export async function updateServiceTemplate(data: UpdateServiceTemplateInput) {
     });
 
     revalidatePath('/dashboard/templates');
-
     return { ok: true, message: 'Pomyślnie zaktualizowano szablon.' };
   } catch (error) {
     console.error('Template update error:', error);
@@ -123,16 +124,12 @@ export async function updateServiceTemplate(data: UpdateServiceTemplateInput) {
 }
 
 export async function deleteServiceTemplate(data: DeleteServiceTemplateInput) {
+  // TODO: Auth check
+
   const validation = deleteServiceTemplateSchema.safeParse(data);
 
   if (!validation.success) {
-    const errors = validation.error.flatten();
-    return {
-      ok: false,
-      error: 'Błędy walidacji formularza',
-      fieldErrors: errors.fieldErrors,
-      formErrors: errors.formErrors,
-    };
+    return { ok: false, error: 'Błędne ID szablonu' };
   }
 
   try {
