@@ -1,15 +1,10 @@
 import { Prisma } from '@/generated/prisma/client';
 
-export type QuoteDataExtended = Prisma.pricing_historyGetPayload<{
+export type QuoteDataForPdf = Prisma.pricing_historyGetPayload<{
   include: {
     client: {
       include: {
         client_addresses: true;
-      };
-    };
-    project: {
-      include: {
-        project_details: true;
       };
     };
     pricingServices: {

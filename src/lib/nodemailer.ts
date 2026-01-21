@@ -22,7 +22,7 @@ const transportOptions: SMTPTransport.Options = {
   },
 };
 
-export const transporter = nodemailer.createTransport(transportOptions);
+export const transporter: nodemailer.Transporter = nodemailer.createTransport(transportOptions);
 
 export const mailOptions = {
   from: process.env.EMAIL_FROM,
