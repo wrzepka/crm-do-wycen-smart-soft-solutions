@@ -16,6 +16,7 @@ function assertValidationSuccess<T>(result: {
   error?: any;
 }): asserts result is { success: true; data: T } {
   if (!result.success) {
+    console.error('Validation should have passed:', result.error);
     throw new Error('Validation should have passed');
   }
 }
@@ -37,10 +38,10 @@ describe('Pricing Schemas (Unit)', () => {
       const validData = {
         name: 'Strona internetowa',
         description: 'Strona firmowa z responsywnym designem',
-        net_price: 5000,
-        margin_amount: 1000,
-        discount_amount: 500,
-        total_price: 5500,
+        subtotal_net: 5000,
+        discount: 500,
+        total_net: 4500,
+        total_cost: 3000,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(validData);
@@ -52,10 +53,10 @@ describe('Pricing Schemas (Unit)', () => {
     it('should transform string values to numbers', () => {
       const inputData = {
         name: 'Aplikacja mobilna',
-        net_price: '7500.50',
-        margin_amount: '1500',
-        discount_amount: '200.75',
-        total_price: '8799.75',
+        subtotal_net: '7500.50',
+        discount: '500.25',
+        total_net: '6999.75',
+        total_cost: '4500',
         pricingHistoryId: '2',
       };
       const result = newPricingServiceSchema.safeParse(inputData);
@@ -63,9 +64,10 @@ describe('Pricing Schemas (Unit)', () => {
       expect(result.success).toBe(true);
       assertValidationSuccess(result);
 
-      expect(typeof result.data.net_price).toBe('number');
-      expect(result.data.net_price).toBe(7500.5);
-      expect(typeof result.data.margin_amount).toBe('number');
+      expect(typeof result.data.subtotal_net).toBe('number');
+      expect(result.data.subtotal_net).toBe(7500.5);
+      expect(typeof result.data.discount).toBe('number');
+      expect(result.data.discount).toBe(500.25);
       expect(typeof result.data.pricingHistoryId).toBe('number');
       expect(result.data.pricingHistoryId).toBe(2);
     });
@@ -73,8 +75,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should fail when name is empty', () => {
       const invalidData = {
         name: '',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -83,11 +86,12 @@ describe('Pricing Schemas (Unit)', () => {
       expect(result.error.flatten().fieldErrors.name).toContain('Nazwa usługi nie może być pusta');
     });
 
-    it('should fail when net_price is negative', () => {
+    it('should fail when subtotal_net is negative', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: -100,
-        total_price: 1200,
+        subtotal_net: -100,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -97,8 +101,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle optional fields correctly', () => {
       const minimalData = {
         name: 'Minimalna usługa',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(minimalData);
@@ -106,20 +111,34 @@ describe('Pricing Schemas (Unit)', () => {
       expect(result.success).toBe(true);
       assertValidationSuccess(result);
 
-      expect(result.data.margin_amount).toBe(0);
-      expect(result.data.discount_amount).toBeUndefined();
+      expect(result.data.discount).toBe(0);
       expect(result.data.description).toBeUndefined();
     });
 
     it('should treat invalid string numbers as errors', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 'nie-liczba',
-        total_price: 1200,
+        subtotal_net: 'nie-liczba',
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
+    });
+
+    it('should allow zero values for cost and discount', () => {
+      const validData = {
+        name: 'Usługa z zerowymi wartościami',
+        subtotal_net: 1000,
+        discount: 0,
+        total_net: 1000,
+        total_cost: 0,
+        pricingHistoryId: 1,
+      };
+      const result = newPricingServiceSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      assertValidationSuccess(result);
     });
   });
 
@@ -129,7 +148,7 @@ describe('Pricing Schemas (Unit)', () => {
       const updateData = {
         id: 10,
         name: 'Zaktualizowana nazwa',
-        discount_amount: 300,
+        discount: 300,
       };
       const result = updatePricingServiceSchema.safeParse(updateData);
       expect(result.success).toBe(true);
@@ -193,9 +212,10 @@ describe('Pricing Schemas (Unit)', () => {
       const validData = {
         label: 'Programista senior',
         positionId: 1,
-        unitPrice: 150,
-        hours: 40,
-        totalCost: 6000,
+        unit: 'h',
+        quantity: 40,
+        unit_price: 150,
+        unit_cost: 100,
         pricingServiceId: 3,
       };
       const result = newPricingServiceResourceSchema.safeParse(validData);
@@ -204,12 +224,12 @@ describe('Pricing Schemas (Unit)', () => {
       expect(result.data.label).toBe('Programista senior');
     });
 
-    it('should set default unit to "h"', () => {
+    it('should set default unit to "h" when not provided', () => {
       const dataWithoutUnit = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
       };
       const result = newPricingServiceResourceSchema.safeParse(dataWithoutUnit);
@@ -222,9 +242,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle nullable positionId correctly', () => {
       const dataWithoutPosition = {
         label: 'Zasób bez pozycji',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
         positionId: null,
       };
@@ -237,9 +257,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should transform string values to numbers', () => {
       const stringData = {
         label: 'Test',
-        unitPrice: '120.50',
-        hours: '20.5',
-        totalCost: '2470.25',
+        quantity: '20.5',
+        unit_price: '120.50',
+        unit_cost: '80.25',
         pricingServiceId: '5',
       };
       const result = newPricingServiceResourceSchema.safeParse(stringData);
@@ -247,10 +267,26 @@ describe('Pricing Schemas (Unit)', () => {
       expect(result.success).toBe(true);
       assertValidationSuccess(result);
 
-      expect(typeof result.data.unitPrice).toBe('number');
-      expect(result.data.unitPrice).toBe(120.5);
+      expect(typeof result.data.quantity).toBe('number');
+      expect(result.data.quantity).toBe(20.5);
+      expect(typeof result.data.unit_price).toBe('number');
+      expect(result.data.unit_price).toBe(120.5);
       expect(typeof result.data.pricingServiceId).toBe('number');
       expect(result.data.pricingServiceId).toBe(5);
+    });
+
+    it('should allow zero unit_cost', () => {
+      const validData = {
+        label: 'Zasób z zerowym kosztem',
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 0,
+        pricingServiceId: 1,
+      };
+      const result = newPricingServiceResourceSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      assertValidationSuccess(result);
+      expect(result.data.unit_cost).toBe(0);
     });
   });
 
@@ -260,7 +296,7 @@ describe('Pricing Schemas (Unit)', () => {
       const updateData = {
         id: 25,
         label: 'Zaktualizowana etykieta',
-        hours: 30,
+        quantity: 30,
       };
       const result = updatePricingServiceResourceSchema.safeParse(updateData);
       expect(result.success).toBe(true);
@@ -295,21 +331,23 @@ describe('Pricing Schemas (Unit)', () => {
     it('should validate service with multiple resources', () => {
       const validData = {
         name: 'Kompleksowy projekt',
-        net_price: 10000,
-        total_price: 12000,
+        subtotal_net: 10000,
+        discount: 1000,
+        total_net: 9000,
+        total_cost: 6000,
         pricingHistoryId: 3,
         resources: [
           {
             label: 'Programista',
-            unitPrice: 150,
-            hours: 40,
-            totalCost: 6000,
+            quantity: 40,
+            unit_price: 150,
+            unit_cost: 100,
           },
           {
             label: 'Designer',
-            unitPrice: 120,
-            hours: 20,
-            totalCost: 2400,
+            quantity: 20,
+            unit_price: 120,
+            unit_cost: 80,
           },
         ],
       };
@@ -322,8 +360,10 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle service without resources', () => {
       const dataWithoutResources = {
         name: 'Usługa bez zasobów',
-        net_price: 5000,
-        total_price: 6000,
+        subtotal_net: 5000,
+        discount: 0,
+        total_net: 5000,
+        total_cost: 0,
         pricingHistoryId: 1,
       };
       const result = createPricingServiceWithResourcesSchema.safeParse(dataWithoutResources);
@@ -336,15 +376,16 @@ describe('Pricing Schemas (Unit)', () => {
     it('should fail if resources have invalid data', () => {
       const invalidData = {
         name: 'Test',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
         resources: [
           {
             label: '', // empty label
-            unitPrice: 100,
-            hours: 10,
-            totalCost: 1000,
+            quantity: 10,
+            unit_price: 100,
+            unit_cost: 80,
           },
         ],
       };
@@ -363,15 +404,15 @@ describe('Pricing Schemas (Unit)', () => {
           // New resource (without ID)
           {
             label: 'Nowy zasób',
-            unitPrice: 200,
-            hours: 15,
-            totalCost: 3000,
+            quantity: 15,
+            unit_price: 200,
+            unit_cost: 150,
           },
           // Existing resource (with ID)
           {
             id: 5,
             label: 'Zaktualizowany istniejący zasób',
-            hours: 25,
+            quantity: 25,
           },
         ],
       };
@@ -396,11 +437,12 @@ describe('Pricing Schemas (Unit)', () => {
   // ### Edge Cases in Pricing Schemas ###
   describe('Edge Cases - Transform Methods', () => {
     // Tests for transformation in newPricingServiceSchema
-    it('should handle non-numeric string in net_price transform', () => {
+    it('should handle non-numeric string in subtotal_net transform', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 'abc123',
-        total_price: 1200,
+        subtotal_net: 'abc123',
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -408,93 +450,71 @@ describe('Pricing Schemas (Unit)', () => {
       assertValidationFailure(result);
     });
 
-    it('should handle empty string in margin_amount transform', () => {
+    it('should handle empty string in discount transform', () => {
       const data = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
-        margin_amount: '',
+        discount: '',
       };
       const result = newPricingServiceSchema.safeParse(data);
       expect(result.success).toBe(true);
       assertValidationSuccess(result);
-      expect(result.data.margin_amount).toBe(0);
+      expect(result.data.discount).toBe(0);
     });
 
-    it('should handle invalid string in margin_amount transform', () => {
+    it('should handle invalid string in discount transform', () => {
       const data = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
-        margin_amount: 'nie-liczba',
+        discount: 'nie-liczba',
       };
       const result = newPricingServiceSchema.safeParse(data);
       expect(result.success).toBe(true);
       assertValidationSuccess(result);
-      expect(result.data.margin_amount).toBe(0);
+      expect(result.data.discount).toBe(0);
     });
 
-    it('should handle null in margin_amount transform', () => {
+    it('should handle null in discount transform', () => {
       const data = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
-        margin_amount: null,
+        discount: null,
       };
       const result = newPricingServiceSchema.safeParse(data);
       expect(result.success).toBe(true);
       assertValidationSuccess(result);
-      expect(result.data.margin_amount).toBe(0);
+      expect(result.data.discount).toBe(0);
     });
 
-    it('should handle undefined in margin_amount transform', () => {
+    it('should handle undefined in discount transform', () => {
       const data = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(data);
       expect(result.success).toBe(true);
       assertValidationSuccess(result);
-      expect(result.data.margin_amount).toBe(0);
-    });
-
-    it('should handle invalid string in discount_amount transform', () => {
-      const data = {
-        name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
-        pricingHistoryId: 1,
-        discount_amount: 'nie-liczba',
-      };
-      const result = newPricingServiceSchema.safeParse(data);
-      expect(result.success).toBe(true);
-      assertValidationSuccess(result);
-      expect(result.data.discount_amount).toBeNull();
-    });
-
-    it('should handle undefined in discount_amount transform', () => {
-      const data = {
-        name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
-        pricingHistoryId: 1,
-      };
-      const result = newPricingServiceSchema.safeParse(data);
-      expect(result.success).toBe(true);
-      assertValidationSuccess(result);
-      expect(result.data.discount_amount).toBeUndefined();
+      expect(result.data.discount).toBe(0);
     });
 
     it('should handle non-numeric string in pricingHistoryId transform', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 'abc123',
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -506,9 +526,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle undefined in positionId transform', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
       };
       const result = newPricingServiceResourceSchema.safeParse(data);
@@ -520,9 +540,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle null in positionId transform', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
         positionId: null,
       };
@@ -535,9 +555,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle negative number in positionId transform', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
         positionId: -5,
       };
@@ -550,9 +570,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle zero in positionId transform', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
         positionId: 0,
       };
@@ -562,12 +582,12 @@ describe('Pricing Schemas (Unit)', () => {
       expect(result.data.positionId).toBeNull();
     });
 
-    it('should handle invalid string in unitPrice transform', () => {
+    it('should handle invalid string in unit_price transform', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 'abc',
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 'abc',
+        unit_cost: 80,
         pricingServiceId: 1,
       };
       const result = newPricingServiceResourceSchema.safeParse(data);
@@ -575,12 +595,12 @@ describe('Pricing Schemas (Unit)', () => {
       assertValidationFailure(result);
     });
 
-    it('should handle invalid string in hours transform', () => {
+    it('should handle invalid string in quantity transform', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 'xyz',
-        totalCost: 1000,
+        quantity: 'xyz',
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
       };
       const result = newPricingServiceResourceSchema.safeParse(data);
@@ -588,12 +608,12 @@ describe('Pricing Schemas (Unit)', () => {
       assertValidationFailure(result);
     });
 
-    it('should handle invalid string in totalCost transform', () => {
+    it('should handle invalid string in unit_cost transform', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 'nie-liczba',
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 'nie-liczba',
         pricingServiceId: 1,
       };
       const result = newPricingServiceResourceSchema.safeParse(data);
@@ -604,9 +624,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle invalid string in pricingServiceId transform', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 'abc123',
       };
       const result = newPricingServiceResourceSchema.safeParse(data);
@@ -648,24 +668,39 @@ describe('Pricing Schemas (Unit)', () => {
 
   // ### Additional Coverage Tests ###
   describe('Additional Coverage Tests', () => {
-    // Test for empty string in net_price
-    it('should handle empty string in net_price', () => {
+    // Test for empty string in subtotal_net
+    it('should handle empty string in subtotal_net', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: '',
-        total_price: 1200,
+        subtotal_net: '',
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
     });
 
-    // Test for empty string in total_price
-    it('should handle empty string in total_price', () => {
+    // Test for empty string in total_net
+    it('should handle empty string in total_net', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: '',
+        subtotal_net: 1000,
+        total_net: '',
+        total_cost: 800,
+        pricingHistoryId: 1,
+      };
+      const result = newPricingServiceSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    // Test for empty string in total_cost
+    it('should handle empty string in total_cost', () => {
+      const invalidData = {
+        name: 'Test usługi',
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: '',
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -676,8 +711,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle empty string in pricingHistoryId', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: '',
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -688,8 +724,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle string "0" in pricingHistoryId', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: '0',
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -720,9 +757,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle string "0" in positionId', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
         positionId: '0',
       };
@@ -736,9 +773,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle empty string in positionId', () => {
       const data = {
         label: 'Test zasób',
-        unitPrice: 100,
-        hours: 10,
-        totalCost: 1000,
+        quantity: 10,
+        unit_price: 100,
+        unit_cost: 80,
         pricingServiceId: 1,
         positionId: '',
       };
@@ -748,12 +785,13 @@ describe('Pricing Schemas (Unit)', () => {
       expect(result.data.positionId).toBeNull();
     });
 
-    // Test for invalid string in net_price with proper error
-    it('should handle invalid net_price string with proper error', () => {
+    // Test for invalid string in subtotal_net with proper error
+    it('should handle invalid subtotal_net string with proper error', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 'abc',
-        total_price: 1200,
+        subtotal_net: 'abc',
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -762,19 +800,19 @@ describe('Pricing Schemas (Unit)', () => {
       assertValidationFailure(result);
 
       const error = result.error.flatten();
-      // Combine errors from formErrors and fieldErrors.net_price
-      const errorMessages = [...error.formErrors, ...(error.fieldErrors.net_price || [])];
+      const errorMessages = [...error.formErrors, ...(error.fieldErrors.subtotal_net || [])];
       expect(errorMessages).toEqual(
-        expect.arrayContaining([expect.stringContaining('Cena netto musi być dodatnią liczbą')]),
+        expect.arrayContaining([expect.stringContaining('Suma netto musi być nieujemną liczbą')]),
       );
     });
 
-    // Test for invalid string in total_price
-    it('should handle invalid total_price string with proper error', () => {
+    // Test for invalid string in total_net
+    it('should handle invalid total_net string with proper error', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 'xyz',
+        subtotal_net: 1000,
+        total_net: 'xyz',
+        total_cost: 800,
         pricingHistoryId: 1,
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -786,8 +824,9 @@ describe('Pricing Schemas (Unit)', () => {
     it('should handle invalid pricingHistoryId string with proper error', () => {
       const invalidData = {
         name: 'Test usługi',
-        net_price: 1000,
-        total_price: 1200,
+        subtotal_net: 1000,
+        total_net: 1200,
+        total_cost: 800,
         pricingHistoryId: 'abc',
       };
       const result = newPricingServiceSchema.safeParse(invalidData);
@@ -815,6 +854,32 @@ describe('Pricing Schemas (Unit)', () => {
       const result = updatePricingServiceResourceSchema.safeParse(invalidUpdate);
       expect(result.success).toBe(false);
       assertValidationFailure(result);
+    });
+
+    // Test for quantity zero should fail
+    it('should fail when quantity is zero', () => {
+      const invalidData = {
+        label: 'Test zasób',
+        quantity: 0,
+        unit_price: 100,
+        unit_cost: 80,
+        pricingServiceId: 1,
+      };
+      const result = newPricingServiceResourceSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    // Test for negative quantity should fail
+    it('should fail when quantity is negative', () => {
+      const invalidData = {
+        label: 'Test zasób',
+        quantity: -5,
+        unit_price: 100,
+        unit_cost: 80,
+        pricingServiceId: 1,
+      };
+      const result = newPricingServiceResourceSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
     });
   });
 });
