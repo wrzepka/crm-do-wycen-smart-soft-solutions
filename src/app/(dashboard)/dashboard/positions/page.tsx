@@ -24,7 +24,8 @@ export default async function PositionsPage({
   // transformation: converting decimal to number so next.js can send data to client
   const formattedPositions = rawPositions.map((pos) => ({
     ...pos,
-    hourly_rate: pos.hourly_rate ? pos.hourly_rate.toNumber() : null,
+    rate: pos.rate ? pos.rate.toNumber() : 0,
+    cost: pos.cost ? pos.cost.toNumber() : 0,
   }));
 
   return (
