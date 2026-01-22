@@ -9,10 +9,10 @@ export const pricingServiceBaseSchema = z.object({
     .min(1, { message: 'Nazwa usługi nie może być pusta' })
     .max(200, { message: 'Nazwa usługi nie może przekraczać 200 znaków' }),
   description: z.string().nullable().optional(),
-  net_price: z
+  subtotal_net: z
     .union([
-      z.string().min(1, { message: 'Cena netto jest wymagana' }),
-      z.number().positive({ message: 'Cena netto musi być dodatnia' }),
+      z.string().min(1, { message: 'Suma netto jest wymagana' }),
+      z.number().nonnegative({ message: 'Suma netto nie może być ujemna' }),
     ])
     .transform((val) => {
       if (typeof val === 'string') {
@@ -21,13 +21,14 @@ export const pricingServiceBaseSchema = z.object({
       }
       return val;
     })
-    .refine((val) => val !== null && val > 0, {
-      message: 'Cena netto musi być dodatnią liczbą',
-    }),
-  margin_amount: z
+    .refine((val) => val !== null && val >= 0, {
+      message: 'Suma netto musi być nieujemną liczbą',
+    })
+    .default(0),
+  discount: z
     .union([
       z.string(),
-      z.number().min(0, { message: 'Marża nie może być ujemna' }),
+      z.number().nonnegative({ message: 'Rabat nie może być ujemny' }),
       z.null(),
       z.undefined(),
     ])
@@ -42,22 +43,10 @@ export const pricingServiceBaseSchema = z.object({
       return val;
     })
     .default(0),
-  discount_amount: z
-    .union([z.string(), z.number().min(0, { message: 'Rabat nie może być ujemny' })])
-    .transform((val) => {
-      if (typeof val === 'string') {
-        if (val === '' || val === null || val === undefined) return null;
-        const parsed = parseFloat(val);
-        return isNaN(parsed) ? null : parsed;
-      }
-      return val;
-    })
-    .nullable()
-    .optional(),
-  total_price: z
+  total_net: z
     .union([
-      z.string().min(1, { message: 'Cena całkowita jest wymagana' }),
-      z.number().positive({ message: 'Cena całkowita musi być dodatnia' }),
+      z.string(),
+      z.number().nonnegative({ message: 'Suma netto końcowa nie może być ujemna' }),
     ])
     .transform((val) => {
       if (typeof val === 'string') {
@@ -66,9 +55,23 @@ export const pricingServiceBaseSchema = z.object({
       }
       return val;
     })
-    .refine((val) => val !== null && val > 0, {
-      message: 'Cena całkowita musi być dodatnią liczbą',
-    }),
+    .refine((val) => val !== null && val >= 0, {
+      message: 'Suma netto końcowa musi być nieujemną liczbą',
+    })
+    .default(0),
+  total_cost: z
+    .union([z.string(), z.number().nonnegative({ message: 'Koszt całkowity nie może być ujemny' })])
+    .transform((val) => {
+      if (typeof val === 'string') {
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? null : parsed;
+      }
+      return val;
+    })
+    .refine((val) => val !== null && val >= 0, {
+      message: 'Koszt całkowity musi być nieujemną liczbą',
+    })
+    .default(0),
   pricingHistoryId: z
     .union([
       z.string().min(1, { message: 'ID wyceny jest wymagane' }),
@@ -119,10 +122,10 @@ export const pricingServiceSelectionSchema = z.object({
   id: z.number().int().positive(),
   name: z.string(),
   description: z.string().nullable(),
-  net_price: z.number(),
-  margin_amount: z.number(),
-  discount_amount: z.number().nullable(),
-  total_price: z.number(),
+  subtotal_net: z.number(),
+  discount: z.number(),
+  total_net: z.number(),
+  total_cost: z.number(),
   pricingHistoryId: z.number().int().positive(),
 });
 
@@ -151,7 +154,23 @@ export const pricingServiceResourceBaseSchema = z.object({
     })
     .nullable()
     .optional(),
-  unitPrice: z
+  unit: z.string().default('h'),
+  quantity: z
+    .union([
+      z.string().min(1, { message: 'Ilość jest wymagana' }),
+      z.number().positive({ message: 'Ilość musi być dodatnia' }),
+    ])
+    .transform((val) => {
+      if (typeof val === 'string') {
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? null : parsed;
+      }
+      return val;
+    })
+    .refine((val) => val !== null && val > 0, {
+      message: 'Ilość musi być dodatnią liczbą',
+    }),
+  unit_price: z
     .union([
       z.string().min(1, { message: 'Cena jednostkowa jest wymagana' }),
       z.number().positive({ message: 'Cena jednostkowa musi być dodatnia' }),
@@ -166,11 +185,10 @@ export const pricingServiceResourceBaseSchema = z.object({
     .refine((val) => val !== null && val > 0, {
       message: 'Cena jednostkowa musi być dodatnią liczbą',
     }),
-  unit: z.string().default('h'),
-  hours: z
+  unit_cost: z
     .union([
-      z.string().min(1, { message: 'Liczba godzin jest wymagana' }),
-      z.number().positive({ message: 'Liczba godzin musi być dodatnia' }),
+      z.string().min(1, { message: 'Koszt jednostkowy jest wymagany' }),
+      z.number().nonnegative({ message: 'Koszt jednostkowy nie może być ujemny' }),
     ])
     .transform((val) => {
       if (typeof val === 'string') {
@@ -179,11 +197,12 @@ export const pricingServiceResourceBaseSchema = z.object({
       }
       return val;
     })
-    .refine((val) => val !== null && val > 0, {
-      message: 'Liczba godzin musi być dodatnią liczbą',
-    }),
-  totalCost: z
-    .union([z.string(), z.number().positive({ message: 'Koszt całkowity musi być dodatni' })])
+    .refine((val) => val !== null && val >= 0, {
+      message: 'Koszt jednostkowy musi być nieujemną liczbą',
+    })
+    .default(0),
+  total_net: z
+    .union([z.string(), z.number().nonnegative({ message: 'Suma netto nie może być ujemna' })])
     .transform((val) => {
       if (typeof val === 'string') {
         const parsed = parseFloat(val);
@@ -191,9 +210,23 @@ export const pricingServiceResourceBaseSchema = z.object({
       }
       return val;
     })
-    .refine((val) => val !== null && val > 0, {
-      message: 'Koszt całkowity musi być dodatnią liczbą',
-    }),
+    .refine((val) => val !== null && val >= 0, {
+      message: 'Suma netto musi być nieujemną liczbą',
+    })
+    .default(0),
+  total_cost: z
+    .union([z.string(), z.number().nonnegative({ message: 'Koszt całkowity nie może być ujemny' })])
+    .transform((val) => {
+      if (typeof val === 'string') {
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? null : parsed;
+      }
+      return val;
+    })
+    .refine((val) => val !== null && val >= 0, {
+      message: 'Koszt całkowity musi być nieujemną liczbą',
+    })
+    .default(0),
   pricingServiceId: z
     .union([
       z.string().min(1, { message: 'ID usługi jest wymagane' }),
@@ -213,9 +246,11 @@ export const pricingServiceResourceBaseSchema = z.object({
   updatedAt: z.date(),
 });
 
-// Schema for creating a new pricing service resource (without ID and timestamps)
+// Schema for creating a new pricing service resource (without ID, timestamps, and calculated fields)
 export const newPricingServiceResourceSchema = pricingServiceResourceBaseSchema.omit({
   id: true,
+  total_net: true,
+  total_cost: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -246,10 +281,12 @@ export const pricingServiceResourceSelectionSchema = z.object({
   id: z.number().int().positive(),
   label: z.string(),
   positionId: z.number().int().positive().nullable(),
-  unitPrice: z.number(),
   unit: z.string(),
-  hours: z.number(),
-  totalCost: z.number(),
+  quantity: z.number(),
+  unit_price: z.number(),
+  unit_cost: z.number(),
+  total_net: z.number(),
+  total_cost: z.number(),
   pricingServiceId: z.number().int().positive(),
 });
 
