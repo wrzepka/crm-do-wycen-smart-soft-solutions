@@ -45,5 +45,5 @@ export const positionSelectionSchema = z.object({
 });
 
 export const deletePositionSchema = z.object({
-  id: z.number().int().positive({ message: 'ID pozycji musi być dodatnie' }),
+  id: z.coerce.number().int().positive({ message: 'ID pozycji musi być dodatnie' }),
 });
