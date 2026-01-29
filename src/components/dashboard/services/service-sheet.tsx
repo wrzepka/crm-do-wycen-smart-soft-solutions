@@ -11,29 +11,28 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-// import position type from service form
 import { ServiceForm, ServiceFormValues, PositionOption } from './service-form';
 import { ServiceTemplateDTO } from './service-list-table';
 
 interface ServiceSheetProps {
   serviceToEdit?: ServiceTemplateDTO | null;
-  positions: PositionOption[]; // added: list of positions needed for the form
+  positions: PositionOption[];
   children?: React.ReactNode;
 }
 
-// map data from table dto to form values
 function mapServiceToForm(service: ServiceTemplateDTO): Partial<ServiceFormValues> {
   return {
-    id: service.id, // crucial: missing id caused create instead of update
+    id: service.id,
     name: service.name,
     description: service.description || '',
-    defaultMargin: service.defaultMargin,
     isActive: service.isActive,
+    // USUNIĘTO: defaultMargin
     resources: service.resources?.map((res) => ({
       label: res.label || 'Zasób',
-      // convert to string as select component operates on strings
       positionId: res.positionId ? String(res.positionId) : null,
-      estimatedHours: Number(res.estimatedHours || 0),
+      estimated_quantity: Number(res.estimated_quantity || 0),
+      unit: res.unit || 'h',
+      price_override: res.price_override ? Number(res.price_override) : undefined
     })) || [],
   };
 }
@@ -62,7 +61,7 @@ export function ServiceSheet({ serviceToEdit, positions, children }: ServiceShee
           </SheetTitle>
           <SheetDescription className="text-slate-400">
             {isEditMode
-              ? 'Zmodyfikuj parametry szablonu.'
+              ? 'Zmodyfikuj zasoby i parametry szablonu.'
               : 'Zdefiniuj nowy szablon usługi w systemie.'}
           </SheetDescription>
         </SheetHeader>

@@ -26,7 +26,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Calculator, Loader2, TrendingUp } from 'lucide-react';
+import { Plus, Trash2, Calculator, Loader2, TrendingUp, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -43,15 +43,15 @@ import {
   CreateServiceTemplateInput,
   UpdateServiceTemplateInput,
 } from '@/types/services';
+import { cn } from '@/lib/utils';
 
-// type definition for position matching database structure
 export interface PositionOption {
   id: number;
   name: string;
-  hourlyRate: number;
+  cost: number;
+  rate: number;
 }
 
-// modify form type to allow nullable id during creation
 export type ServiceFormValues = Omit<z.input<typeof updateServiceTemplateWithResourcesSchema>, 'id'> & {
   id?: string | null;
 };
@@ -64,8 +64,6 @@ interface ServiceFormProps {
 
 export function ServiceForm({ initialData, availablePositions, onSuccess }: ServiceFormProps) {
   const [isPending, setIsPending] = useState(false);
-
-  // determine edit mode based on the presence of id in initial data
   const isEditMode = !!initialData?.id;
 
   const schema = isEditMode
@@ -73,14 +71,12 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
     : createServiceTemplateWithResourcesSchema;
 
   const form = useForm<ServiceFormValues>({
-    // @ts-expect-error: complex zod unions cause strict type mismatch with rhf resolver but runtime is fine
     resolver: zodResolver(schema),
     defaultValues: {
       id: initialData?.id,
       name: initialData?.name || '',
       description: initialData?.description || '',
       isActive: initialData?.isActive ?? true,
-      defaultMargin: initialData?.defaultMargin ?? 20,
       resources: initialData?.resources || [],
     },
   });
@@ -90,53 +86,45 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
     name: 'resources',
   });
 
-  // watch form values to update calculations in real time
   const watchedResources = useWatch({ control: form.control, name: 'resources' });
-  const watchedMargin = useWatch({ control: form.control, name: 'defaultMargin' });
 
-  // calculate totals and profit on the fly
+  // --- LOGIKA KALKULACJI ---
   const summary = useMemo(() => {
-    let totalBaseCost = 0;
-    let totalHours = 0;
+    let totalCost = 0;
+    let totalNetPrice = 0;
+    let totalQuantity = 0;
 
     watchedResources?.forEach((res) => {
       const posIdString = res?.positionId?.toString();
+      const quantity = Number(res?.estimated_quantity) || 0;
 
-      // find matched position to get hourly rate
       const position = availablePositions.find((p) => String(p.id) === posIdString);
-      const rate = position?.hourlyRate || 0;
-      const hours = Number(res?.estimatedHours) || 0;
 
-      totalBaseCost += rate * hours;
-      totalHours += hours;
+      const cost = position?.cost || 0;
+      // Cena: Override lub stawka ze stanowiska
+      const price = res?.price_override !== null && res?.price_override !== undefined
+        ? Number(res.price_override)
+        : (position?.rate || 0);
+
+      totalCost += cost * quantity;
+      totalNetPrice += price * quantity;
+      totalQuantity += quantity;
     });
 
-    const marginPercent = Number(watchedMargin) || 0;
-    const calculatedPrice = totalBaseCost + totalBaseCost * (marginPercent / 100);
-    const profit = calculatedPrice - totalBaseCost;
+    const profit = totalNetPrice - totalCost;
+    const marginPercent = totalNetPrice > 0 ? (profit / totalNetPrice) * 100 : 0;
 
-    return { totalHours, totalBaseCost, calculatedPrice, profit };
-  }, [watchedResources, watchedMargin, availablePositions]);
+    return { totalQuantity, totalCost, totalNetPrice, profit, marginPercent };
+  }, [watchedResources, availablePositions]);
 
   const onSubmit: SubmitHandler<ServiceFormValues> = async (rawVal) => {
     setIsPending(true);
-
     try {
       let result;
-
-      // check against initial data id to decide between update or create action
       if (initialData?.id) {
-        // update existing template
-        const updatePayload = {
-          ...rawVal,
-          id: initialData.id
-        } as unknown as UpdateServiceTemplateInput;
-
-        result = await updateServiceTemplate(updatePayload);
+        result = await updateServiceTemplate({ ...rawVal, id: initialData.id } as UpdateServiceTemplateInput);
       } else {
-        // create new template
-        const createPayload = rawVal as unknown as CreateServiceTemplateInput;
-        result = await createServiceTemplate(createPayload);
+        result = await createServiceTemplate(rawVal as CreateServiceTemplateInput);
       }
 
       if (result.ok) {
@@ -144,13 +132,6 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
         onSuccess();
       } else {
         toast.error(result.error || 'Wystąpił błąd zapisu');
-        if (result.fieldErrors) {
-          Object.entries(result.fieldErrors).forEach(([key, messages]) => {
-            if (messages && messages.length > 0) {
-              form.setError(key as keyof ServiceFormValues, { message: messages[0] });
-            }
-          });
-        }
       }
     } catch (error) {
       console.error(error);
@@ -210,13 +191,13 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
 
         <Separator className="bg-slate-800" />
 
+        {/* --- SEKCJA ZASOBÓW --- */}
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Calculator className="w-4 h-4 text-blue-400" />
-              <h3 className="text-sm font-medium text-slate-200">Zasoby potrzebne do realizacji</h3>
+              <h3 className="text-sm font-medium text-slate-200">Zasoby i Kosztorys</h3>
             </div>
-
             <Button
               type="button"
               variant="outline"
@@ -224,19 +205,20 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
               onClick={() => append({
                 label: '',
                 positionId: null,
-                estimatedHours: 0,
+                estimated_quantity: 0,
+                unit: 'h'
               })}
               className="border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all text-xs"
             >
-              <Plus className="w-3 h-3 mr-1" /> Dodaj zasób
+              <Plus className="w-3 h-3 mr-1" /> Dodaj pozycję
             </Button>
           </div>
 
-          <div className="grid grid-cols-[1.5fr_1fr_100px_100px_40px] gap-4 px-2 text-xs font-medium text-slate-500 uppercase">
-            <div>Nazwa Zadania (Label)</div>
-            <div>Stanowisko</div>
-            <div>Czas (h)</div>
-            <div className="text-right">Koszt est.</div>
+          <div className="grid grid-cols-[1.5fr_1.2fr_80px_100px_40px] gap-4 px-2 text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+            <div>Nazwa / Rola</div>
+            <div>Stanowisko (Bazowe stawki)</div>
+            <div className="text-right">Ilość (h)</div>
+            <div className="text-right">Suma Netto</div>
             <div></div>
           </div>
 
@@ -244,13 +226,14 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
             {fields.map((field, index) => {
               const currentPosId = form.getValues(`resources.${index}.positionId`);
               const currentPos = availablePositions.find((p) => String(p.id) === String(currentPosId));
-              const currentHours = form.getValues(`resources.${index}.estimatedHours`);
-              const rowCost = (currentPos?.hourlyRate || 0) * (Number(currentHours) || 0);
+              const qty = Number(form.getValues(`resources.${index}.estimated_quantity`) || 0);
+              const unitPrice = currentPos?.rate || 0;
+              const rowTotal = unitPrice * qty;
 
               return (
                 <div
                   key={field.id}
-                  className="grid grid-cols-[1.5fr_1fr_100px_100px_40px] gap-4 items-start"
+                  className="grid grid-cols-[1.5fr_1.2fr_80px_100px_40px] gap-4 items-start bg-slate-900/30 p-2 rounded-lg border border-slate-800/50"
                 >
                   <FormField
                     control={form.control}
@@ -261,64 +244,67 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
                           <Input
                             {...field}
                             value={field.value ?? ''}
-                            placeholder="np. Konfiguracja serwera"
-                            className="h-9 bg-[#0B1121] border-slate-700 text-white"
+                            placeholder="np. Backend Dev"
+                            className="h-9 bg-[#0B1121] border-slate-700 text-white text-xs"
                           />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name={`resources.${index}.positionId`}
-                    render={({ field }) => (
-                      <FormItem className="space-y-0">
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value ? String(field.value) : undefined}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-9 bg-[#0B1121] border-slate-700 text-white">
-                              <SelectValue placeholder="Wybierz..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="bg-[#0B1121] border-slate-800 text-white">
-                            {availablePositions.map((pos) => (
-                              <SelectItem key={pos.id} value={String(pos.id)}>
-                                {pos.name} ({pos.hourlyRate} zł)
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="flex flex-col gap-1">
+                    <FormField
+                      control={form.control}
+                      name={`resources.${index}.positionId`}
+                      render={({ field }) => (
+                        <FormItem className="space-y-0">
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value ? String(field.value) : undefined}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="h-9 bg-[#0B1121] border-slate-700 text-white text-xs">
+                                <SelectValue placeholder="Wybierz..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-[#0B1121] border-slate-800 text-white">
+                              {availablePositions.map((pos) => (
+                                <SelectItem key={pos.id} value={String(pos.id)} className="text-xs">
+                                  <span className="font-medium">{pos.name}</span>
+                                  <span className="ml-2 text-slate-500">
+                                    (Cena: {pos.rate} zł)
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <FormField
                     control={form.control}
-                    name={`resources.${index}.estimatedHours`}
+                    name={`resources.${index}.estimated_quantity`}
                     render={({ field }) => (
                       <FormItem className="space-y-0">
                         <FormControl>
                           <NumberInput
-                            value={field.value}
+                            value={(field.value as number | undefined) ?? ''}
                             onChange={field.onChange}
                             min={0}
                             step={0.5}
-                            // override default number input styles for right alignment and background
-                            className="[&_input]:text-right [&_input]:bg-[#0B1121] [&_input]:border-slate-700"
+                            className="h-9 [&_input]:text-right [&_input]:bg-[#0B1121] [&_input]:border-slate-700 text-xs"
                           />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <div className="flex items-center justify-end h-9 px-3 bg-slate-900/50 rounded border border-slate-800 text-slate-400 font-mono text-xs">
-                    {rowCost.toFixed(0)} zł
+                  <div className="flex flex-col items-end justify-center h-full pt-2">
+                    <span className="font-mono text-sm text-emerald-400">
+                      {rowTotal.toFixed(0)} zł
+                    </span>
                   </div>
 
                   <Button
@@ -336,6 +322,7 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
           </div>
         </div>
 
+        {/* --- PANEL PODSUMOWANIA (BEZ DEFAULT MARGIN) --- */}
         <div className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900/50 shadow-inner mt-8">
           <div className="bg-slate-900 px-5 py-3 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -343,9 +330,14 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
               </div>
               <h3 className="text-sm font-semibold text-slate-200 tracking-wide uppercase">
-                Kalkulacja Szablonu
+                Symulacja Finansowa
               </h3>
             </div>
+            {summary.profit < 0 && (
+              <div className="flex items-center gap-1 text-rose-400 text-xs font-medium bg-rose-500/10 px-2 py-1 rounded">
+                <AlertCircle size={12} /> Ujemna marża
+              </div>
+            )}
           </div>
 
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 relative">
@@ -354,82 +346,58 @@ export function ServiceForm({ initialData, availablePositions, onSuccess }: Serv
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <Label className="text-slate-400 text-xs uppercase tracking-wider">
-                  Suma Godzin
+                  Suma Zasobów
                 </Label>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-light text-white font-mono">
-                    {summary.totalHours}
+                    {summary.totalQuantity}
                   </span>
-                  <span className="text-xs text-slate-500 font-medium">h</span>
+                  <span className="text-xs text-slate-500 font-medium">jednostek</span>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-slate-400 text-xs uppercase tracking-wider">
-                  Koszt Wytworzenia (Internal)
+                  Całkowity Koszt (Internal)
                 </Label>
                 <div className="p-3 bg-[#0B1121] rounded-lg border border-slate-800 flex justify-between items-center">
-                  <span className="text-slate-500 text-xs">Stawki pracownicze</span>
+                  <span className="text-slate-500 text-xs">Wypłaty pracowników</span>
                   <div className="font-mono text-slate-300 font-medium text-lg">
-                    {summary.totalBaseCost.toLocaleString('pl-PL', { maximumFractionDigits: 0 })} zł
+                    {summary.totalCost.toLocaleString('pl-PL', { maximumFractionDigits: 0 })} zł
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-6 md:pl-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label className="text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                    Domyślna Marża
-                  </Label>
-                </div>
-                <FormField
-                  control={form.control}
-                  name="defaultMargin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <div className="relative group">
-                          {/* percent icon absolutely positioned */}
-                          <div className="absolute inset-y-0 left-0 bg-emerald-500/10 w-12 flex items-center justify-center rounded-l-md border-r border-emerald-500/20 z-10 pointer-events-none">
-                            <span className="text-emerald-500 font-bold font-mono">%</span>
-                          </div>
-
-                          {/* override number input styles to fit the design with absolute icon */}
-                          <NumberInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            min={0}
-                            max={100}
-                            className="h-12 font-mono font-medium text-xl [&_input]:h-12 [&_input]:pl-14 [&_input]:bg-[#0B1121] [&_input]:border-slate-700"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Separator className="bg-slate-800" />
-
+            <div className="space-y-6 md:pl-4 flex flex-col justify-between h-full">
               <div className="flex flex-col items-end gap-1">
                 <span className="text-xs text-slate-400 uppercase tracking-widest">
-                  Estymowana cena (Netto)
+                  Wartość Oferty (Netto)
                 </span>
-
                 <div className="text-4xl sm:text-5xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-400 tracking-tighter drop-shadow-2xl">
-                  {summary.calculatedPrice.toLocaleString('pl-PL', { maximumFractionDigits: 0 })}
+                  {summary.totalNetPrice.toLocaleString('pl-PL', { maximumFractionDigits: 0 })}
                   <span className="text-lg text-slate-600 ml-3 font-sans font-normal">PLN</span>
                 </div>
+              </div>
 
-                <div className="mt-2 inline-flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="text-xs font-medium text-emerald-400 uppercase font-mono tracking-wide">
-                    ZYSK: +{summary.profit.toLocaleString('pl-PL', { maximumFractionDigits: 0 })}{' '}
-                    PLN
-                  </span>
+              <div className="flex flex-col items-end">
+                <Separator className="bg-slate-800 mb-4 w-full" />
+                <div className={cn(
+                  "inline-flex items-center gap-2 px-4 py-2 rounded-lg border backdrop-blur-sm transition-colors",
+                  summary.profit >= 0
+                    ? "bg-emerald-500/10 border-emerald-500/20"
+                    : "bg-rose-500/10 border-rose-500/20"
+                )}>
+                  <span className={cn("w-2 h-2 rounded-full animate-pulse", summary.profit >= 0 ? "bg-emerald-500" : "bg-rose-500")}></span>
+                  <div className="flex flex-col items-end">
+                    <span className={cn("text-xs font-medium uppercase font-mono tracking-wide", summary.profit >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                      {summary.profit >= 0 ? "Prognozowany Zysk" : "Prognozowana Strata"}
+                    </span>
+                    <span className={cn("text-lg font-bold font-mono leading-none", summary.profit >= 0 ? "text-emerald-300" : "text-rose-300")}>
+                      {summary.profit > 0 ? '+' : ''}{summary.profit.toLocaleString('pl-PL', { maximumFractionDigits: 0 })} PLN
+                      <span className="text-xs ml-1 opacity-70">({summary.marginPercent.toFixed(1)}%)</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

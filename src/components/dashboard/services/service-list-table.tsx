@@ -12,33 +12,29 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit2 } from 'lucide-react';
 import { ServiceSheet } from './service-sheet';
-// import position type to use in props
 import { PositionOption } from './service-form';
 
-// define resource shape to avoid using any
 interface ServiceResourceDTO {
   id: string;
   label: string;
-  positionId: string | null;
-  estimatedHours: number;
-  defaultUnitPrice: number;
+  positionId: number | null;
+  estimated_quantity: number;
+  unit: string;
+  price_override?: number | null;
 }
 
-// dto matching backend data
 export interface ServiceTemplateDTO {
   id: string;
   name: string;
   description: string | null;
-  defaultMargin: number;
+  // USUNIĘTO: defaultMargin
   isActive: boolean;
-  // optional/calculated fields for display
   estimatedPrice?: number;
   resources?: ServiceResourceDTO[];
 }
 
 interface ServiceListTableProps {
   data: ServiceTemplateDTO[];
-  // logic: pass positions prop here to forward it to service sheet for editing mode
   positions?: PositionOption[];
 }
 
@@ -79,9 +75,9 @@ export function ServiceListTable({ data, positions = [] }: ServiceListTableProps
         <Table>
           <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
             <TableRow className="border-slate-200 dark:border-slate-800">
-              <TableHead className="text-slate-500 dark:text-slate-400 pl-6 w-[40%]">Nazwa Usługi</TableHead>
-              <TableHead className="text-slate-500 dark:text-slate-400 w-[15%]">Marża</TableHead>
-              <TableHead className="text-slate-500 dark:text-slate-400 w-[20%]">Cena est.</TableHead>
+              <TableHead className="text-slate-500 dark:text-slate-400 pl-6 w-[50%]">Nazwa Usługi</TableHead>
+              {/* USUNIĘTO KOLUMNĘ MARŻA */}
+              <TableHead className="text-slate-500 dark:text-slate-400 w-[25%]">Wartość (Suma stawek)</TableHead>
               <TableHead className="text-slate-500 dark:text-slate-400 w-[15%]">Status</TableHead>
               <TableHead className="text-right text-slate-500 dark:text-slate-400 pr-6 w-[10%]">Akcje</TableHead>
             </TableRow>
@@ -89,7 +85,7 @@ export function ServiceListTable({ data, positions = [] }: ServiceListTableProps
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                <TableCell colSpan={4} className="h-24 text-center text-slate-500">
                   Brak usług spełniających kryteria.
                 </TableCell>
               </TableRow>
@@ -108,17 +104,10 @@ export function ServiceListTable({ data, positions = [] }: ServiceListTableProps
                     )}
                   </TableCell>
 
-                  <TableCell>
-                    <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                      {service.defaultMargin}%
-                    </Badge>
-                  </TableCell>
-
                   <TableCell>{renderPrice(service)}</TableCell>
                   <TableCell>{renderStatusBadge(service.isActive)}</TableCell>
 
                   <TableCell className="text-right pr-6">
-                    {/* logic: pass positions to sheet for edit form */}
                     <ServiceSheet serviceToEdit={service} positions={positions}>
                       <Button
                         variant="ghost"
