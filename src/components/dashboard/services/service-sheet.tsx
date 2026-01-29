@@ -26,14 +26,14 @@ function mapServiceToForm(service: ServiceTemplateDTO): Partial<ServiceFormValue
     name: service.name,
     description: service.description || '',
     isActive: service.isActive,
-    // USUNIĘTO: defaultMargin
-    resources: service.resources?.map((res) => ({
-      label: res.label || 'Zasób',
-      positionId: res.positionId ? String(res.positionId) : null,
-      estimated_quantity: Number(res.estimated_quantity || 0),
-      unit: res.unit || 'h',
-      price_override: res.price_override ? Number(res.price_override) : undefined
-    })) || [],
+    resources:
+      service.resources?.map((res) => ({
+        label: res.label || 'Zasób',
+        positionId: res.positionId ? String(res.positionId) : null,
+        estimated_quantity: Number(res.estimated_quantity || 0),
+        unit: res.unit || 'h',
+        price_override: res.price_override ? Number(res.price_override) : undefined,
+      })) || [],
   };
 }
 

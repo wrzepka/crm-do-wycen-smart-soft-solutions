@@ -27,7 +27,6 @@ export interface ServiceTemplateDTO {
   id: string;
   name: string;
   description: string | null;
-  // USUNIĘTO: defaultMargin
   isActive: boolean;
   estimatedPrice?: number;
   resources?: ServiceResourceDTO[];
@@ -39,7 +38,6 @@ interface ServiceListTableProps {
 }
 
 export function ServiceListTable({ data, positions = [] }: ServiceListTableProps) {
-
   const renderPrice = (service: ServiceTemplateDTO) => {
     const price = service.estimatedPrice || 0;
     return (
@@ -75,11 +73,14 @@ export function ServiceListTable({ data, positions = [] }: ServiceListTableProps
         <Table>
           <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
             <TableRow className="border-slate-200 dark:border-slate-800">
-              <TableHead className="text-slate-500 dark:text-slate-400 pl-6 w-[50%]">Nazwa Usługi</TableHead>
-              {/* USUNIĘTO KOLUMNĘ MARŻA */}
-              <TableHead className="text-slate-500 dark:text-slate-400 w-[25%]">Wartość (Suma stawek)</TableHead>
+              <TableHead className="text-slate-500 dark:text-slate-400 pl-6 w-[50%]">
+                Nazwa Usługi
+              </TableHead>
+              <TableHead className="text-slate-500 dark:text-slate-400 w-[25%]">Wartość </TableHead>
               <TableHead className="text-slate-500 dark:text-slate-400 w-[15%]">Status</TableHead>
-              <TableHead className="text-right text-slate-500 dark:text-slate-400 pr-6 w-[10%]">Akcje</TableHead>
+              <TableHead className="text-right text-slate-500 dark:text-slate-400 pr-6 w-[10%]">
+                Akcje
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
