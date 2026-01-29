@@ -12,12 +12,14 @@ export const pricingHistoryBaseSchema = z.object({
   id: z.number().int().positive({ message: 'Nieprawidłowe ID wyceny' }),
   client_id: z.number().int().positive({ message: 'ID klienta jest wymagane' }),
   project_id: z.number().int().positive().nullable().optional(),
+  version: z.number().int().positive().default(1),
+  is_current_version: z.boolean().default(true),
   quote_date: z.date(),
   quote_code: z
     .string()
     .nullable()
     .optional()
-    .refine((val) => !val || /^[A-Z0-9/]{3,50}$/.test(val), {
+    .refine((val) => !val || /^[A-Z0-9/\-v]{3,50}$/.test(val), {
       message: 'Nieprawidłowy format numeru oferty',
     }),
   subtotal_net: z

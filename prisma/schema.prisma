@@ -88,6 +88,10 @@ model pricing_history {
   total_gross  Decimal @default(0) @db.Decimal(12, 2) // total_net * 1.vat_rate
   total_cost   Decimal @default(0) @db.Decimal(12, 2) // sum of all services costs
 
+  version             Int                 @default(1)                // version number
+  is_current_version  Boolean             @default(true)             // is this the current version
+  previousVersionId   Int?                // id of the previous version
+
   currency String?     @default("PLN") @db.VarChar(3)
   status   QuoteStatus @default(DRAFT)
   notes    String?
@@ -95,9 +99,12 @@ model pricing_history {
   client          clients          @relation(fields: [client_id], references: [id], onDelete: Cascade)
   project         projects?        @relation(fields: [project_id], references: [id], onDelete: Cascade)
   pricingServices PricingService[]
+  previousVersion     pricing_history?    @relation("PricingHistoryVersions", fields: [previousVersionId], references: [id])
+  nextVersions       pricing_history[]   @relation("PricingHistoryVersions")
 
   @@index([quote_code])
   @@map("pricing_history")
+  @@index([previousVersionId])
 }
 
 model project_details {
