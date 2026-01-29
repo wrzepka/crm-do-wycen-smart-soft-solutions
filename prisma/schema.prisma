@@ -70,7 +70,7 @@ enum QuoteStatus {
   SENT
   ACCEPTED
   REJECTED
-  CANCELED
+  CANCELLED
 }
 
 model pricing_history {
