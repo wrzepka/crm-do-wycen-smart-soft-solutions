@@ -6,19 +6,23 @@ import { format } from 'date-fns';
 import { QuoteFormValues } from './quote-editor';
 
 export function QuotePreview() {
-    // Używamy naszego typu frontendowego
+    // Nasłuchujemy wszystkich zmian w formularzu
     const { watch } = useFormContext<QuoteFormValues>();
-
     const formData = watch();
 
     const services = formData.services || [];
 
+    // Obliczanie sum
     const totalNet = services.reduce((acc, service) => {
-        const serviceTotal = (service.resources || []).reduce((resAcc, res) => {
+        // Zabezpieczenie przed undefined resources
+        const resources = service.resources || [];
+
+        const serviceTotal = resources.reduce((resAcc, res) => {
             const qty = Number(res.quantity) || 0;
             const price = Number(res.unit_price) || 0;
             return resAcc + (qty * price);
         }, 0);
+
         return acc + serviceTotal - (Number(service.discount) || 0);
     }, 0) - (Number(formData.discount) || 0);
 
@@ -44,7 +48,6 @@ export function QuotePreview() {
                     <h2 className="text-2xl font-light text-slate-800 mb-1">OFERTA</h2>
                     <p className="font-mono text-slate-500 mb-4"># SZKIC</p>
                     <div className="text-xs text-slate-500">
-                        {/* Teraz TS wie, że quote_date istnieje */}
                         Data: {formData.quote_date ? format(formData.quote_date, 'dd.MM.yyyy') : '-'}
                     </div>
                 </div>
@@ -75,25 +78,28 @@ export function QuotePreview() {
                                 </td>
                             </tr>
                         )}
-                        {services.map((service, idx) => (
-                            <>
-                                <tr key={`svc-${idx}`} className="bg-slate-50">
-                                    <td colSpan={4} className="py-2 px-2 font-medium text-slate-700">
-                                        {service.name || 'Bez nazwy'}
-                                    </td>
-                                </tr>
-                                {(service.resources || []).map((res, rIdx) => (
-                                    <tr key={`res-${idx}-${rIdx}`}>
-                                        <td className="py-3 pl-4 text-slate-600">{res.label}</td>
-                                        <td className="py-3 text-right">{res.quantity} {res.unit}</td>
-                                        <td className="py-3 text-right">{Number(res.unit_price).toFixed(2)}</td>
-                                        <td className="py-3 text-right font-medium">
-                                            {(Number(res.quantity) * Number(res.unit_price)).toFixed(2)}
+                        {services.map((service, idx) => {
+                            const resources = service.resources || [];
+                            return (
+                                <>
+                                    <tr key={`svc-${idx}`} className="bg-slate-50">
+                                        <td colSpan={4} className="py-2 px-2 font-medium text-slate-700">
+                                            {service.name || 'Bez nazwy'}
                                         </td>
                                     </tr>
-                                ))}
-                            </>
-                        ))}
+                                    {resources.map((res, rIdx) => (
+                                        <tr key={`res-${idx}-${rIdx}`}>
+                                            <td className="py-3 pl-4 text-slate-600">{res.label}</td>
+                                            <td className="py-3 text-right">{res.quantity} {res.unit}</td>
+                                            <td className="py-3 text-right">{Number(res.unit_price).toFixed(2)}</td>
+                                            <td className="py-3 text-right font-medium">
+                                                {(Number(res.quantity || 0) * Number(res.unit_price || 0)).toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

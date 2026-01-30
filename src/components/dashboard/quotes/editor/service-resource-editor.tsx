@@ -1,6 +1,6 @@
 'use client';
 
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,9 +19,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { QuoteFormValues } from './quote-editor';
-import { cn } from '@/lib/utils';
 
 interface ServiceResourceEditorProps {
     nestIndex: number;
@@ -29,15 +28,19 @@ interface ServiceResourceEditorProps {
 }
 
 export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceEditorProps) {
-    const { control, watch, setValue } = useFormContext<QuoteFormValues>();
+    const { control, setValue } = useFormContext<QuoteFormValues>();
 
     const { fields, append, remove } = useFieldArray({
         control,
         name: `services.${nestIndex}.resources`,
     });
 
-    // Obserwujemy całą tablicę zasobów dla tej usługi, aby przeliczać sumy w czasie rzeczywistym
-    const resources = watch(`services.${nestIndex}.resources`);
+    // Używamy useWatch, aby mieć podgląd wartości live (do obliczeń w tabeli)
+    // To jest wydajniejsze niż watch() całego formularza
+    const resourcesWatcher = useWatch({
+        control,
+        name: `services.${nestIndex}.resources`,
+    });
 
     const addResource = () => {
         append({
@@ -57,7 +60,7 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                     <TableHeader>
                         <TableRow className="bg-slate-50">
                             <TableHead className="w-[30px]"></TableHead>
-                            <TableHead className="w-[200px]">Stanowisko (Opcjonalnie)</TableHead>
+                            <TableHead className="w-[200px]">Stanowisko</TableHead>
                             <TableHead className="min-w-[200px]">Nazwa pozycji / Czynność</TableHead>
                             <TableHead className="w-[100px]">Ilość</TableHead>
                             <TableHead className="w-[80px]">Jedn.</TableHead>
@@ -68,9 +71,12 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                     </TableHeader>
                     <TableBody>
                         {fields.map((item, k) => {
-                            const currentResource = resources?.[k] || item;
-                            const qty = Number(currentResource.quantity) || 0;
-                            const price = Number(currentResource.unit_price) || 0;
+                            // Pobieramy wartości live z watchera, a jeśli ich nie ma (np. przed pierwszym renderem), bierzemy z item
+                            // resourcesWatcher może być undefined przy inicjalizacji
+                            const watchedItem = resourcesWatcher?.[k];
+
+                            const qty = Number(watchedItem?.quantity ?? item.quantity ?? 0);
+                            const price = Number(watchedItem?.unit_price ?? item.unit_price ?? 0);
                             const total = (qty * price).toFixed(2);
 
                             return (
@@ -80,7 +86,7 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                                         <GripVertical className="h-4 w-4 text-slate-300 cursor-move" />
                                     </TableCell>
 
-                                    {/* Wybór Stanowiska - Automatyczne uzupełnianie */}
+                                    {/* Wybór Stanowiska */}
                                     <TableCell>
                                         <FormField
                                             control={control}
@@ -90,12 +96,15 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                                                     <Select
                                                         value={field.value ? String(field.value) : undefined}
                                                         onValueChange={(val) => {
-                                                            field.onChange(Number(val));
-                                                            const pos = positions.find(p => p.id === Number(val));
+                                                            const numVal = Number(val);
+                                                            field.onChange(numVal);
+                                                            const pos = positions.find(p => p.id === numVal);
                                                             if (pos) {
                                                                 setValue(`services.${nestIndex}.resources.${k}.unit_price`, Number(pos.rate));
                                                                 setValue(`services.${nestIndex}.resources.${k}.unit_cost`, Number(pos.cost));
-                                                                const currentLabel = resources?.[k]?.label;
+
+                                                                // Ustawiamy nazwę tylko jeśli jest pusta
+                                                                const currentLabel = resourcesWatcher?.[k]?.label;
                                                                 if (!currentLabel) {
                                                                     setValue(`services.${nestIndex}.resources.${k}.label`, pos.name);
                                                                 }
@@ -103,7 +112,7 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                                                         }}
                                                     >
                                                         <FormControl>
-                                                            <SelectTrigger className="h-8 text-xs bg-slate-50">
+                                                            <SelectTrigger className="h-8 text-xs bg-slate-50 border-slate-200">
                                                                 <SelectValue placeholder="Wybierz..." />
                                                             </SelectTrigger>
                                                         </FormControl>
@@ -128,7 +137,7 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input {...field} value={field.value ?? ''} placeholder="Opis pozycji..." className="h-8 bg-transparent" />
+                                                        <Input {...field} value={field.value || ''} placeholder="Opis..." className="h-8 bg-transparent" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -145,15 +154,15 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                                                     <FormControl>
                                                         <Input
                                                             type="number"
-                                                            min={0}
-                                                            step={0.5}
                                                             className="h-8 text-right font-medium"
+                                                            placeholder="0"
                                                             {...field}
-                                                            // NAPRAWA BŁĘDU: Obsługa null/undefined w value i onChange
+                                                            // Kluczowa poprawka: value musi być stringiem lub number, ale nie null
                                                             value={field.value ?? ''}
-                                                            onChange={e => {
-                                                                const val = e.target.valueAsNumber;
-                                                                field.onChange(isNaN(val) ? 0 : val);
+                                                            onChange={(e) => {
+                                                                // Pozwalamy na pusty ciąg znaków podczas edycji
+                                                                const val = e.target.value;
+                                                                field.onChange(val === '' ? 0 : parseFloat(val));
                                                             }}
                                                         />
                                                     </FormControl>
@@ -170,7 +179,7 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input {...field} value={field.value ?? ''} className="h-8 text-center text-xs text-slate-500" />
+                                                        <Input {...field} value={field.value || ''} className="h-8 text-center text-xs text-slate-500" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -187,15 +196,13 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                                                     <FormControl>
                                                         <Input
                                                             type="number"
-                                                            min={0}
-                                                            step={1}
                                                             className="h-8 text-right text-amber-600 font-semibold border-amber-100 focus:border-amber-400"
+                                                            placeholder="0.00"
                                                             {...field}
-                                                            // NAPRAWA BŁĘDU: Obsługa null/undefined w value i onChange
                                                             value={field.value ?? ''}
-                                                            onChange={e => {
-                                                                const val = e.target.valueAsNumber;
-                                                                field.onChange(isNaN(val) ? 0 : val);
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                field.onChange(val === '' ? 0 : parseFloat(val));
                                                             }}
                                                         />
                                                     </FormControl>
@@ -212,6 +219,7 @@ export function ServiceResourceEditor({ nestIndex, positions }: ServiceResourceE
                                     {/* Usuń */}
                                     <TableCell>
                                         <Button
+                                            type="button" // Ważne: prevent submit
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 text-slate-400 hover:text-red-600"
