@@ -1,27 +1,20 @@
 'use client';
 
-import { useFieldArray, useFormContext } from 'react-hook-form';
-import { Plus, Trash2, Layers, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { Plus, Trash2, Layers, ChevronDown, ChevronUp, Download, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { QuoteFormValues } from './quote-editor';
 import { ServiceResourceEditor } from './service-resource-editor';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { FormField, FormItem, FormControl } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
-// Props z danymi do wyboru
 interface QuoteServicesEditorProps {
     serviceTemplates: any[];
     positions: any[];
@@ -29,13 +22,8 @@ interface QuoteServicesEditorProps {
 
 export function QuoteServicesEditor({ serviceTemplates, positions }: QuoteServicesEditorProps) {
     const { control } = useFormContext<QuoteFormValues>();
+    const { fields, append, remove } = useFieldArray({ control, name: 'services' });
 
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: 'services',
-    });
-
-    // 1. Dodaje PUSTĄ usługę
     const addEmptyService = () => {
         append({
             name: 'Nowa usługa',
@@ -49,31 +37,19 @@ export function QuoteServicesEditor({ serviceTemplates, positions }: QuoteServic
         });
     };
 
-    // 2. Dodaje usługę Z SZABLONU
     const addFromTemplate = (templateId: string) => {
         const template = serviceTemplates.find(t => String(t.id) === templateId);
         if (!template) return;
 
-        // Mapujemy zasoby z szablonu na format formularza
         const mappedResources = (template.resources || []).map((res: any) => {
-            // Próbujemy znaleźć powiązane stanowisko, aby pobrać aktualne stawki
             const pos = positions.find(p => p.id === res.positionId);
-
-            // Cena: Jeśli szablon ma override -> override. Jeśli nie -> stawka stanowiska.
-            const price = res.price_override
-                ? Number(res.price_override)
-                : (pos?.rate ? Number(pos.rate) : 0);
-
-            const cost = pos?.cost ? Number(pos.cost) : 0;
-
             return {
                 label: res.label,
-                // Ważne: rzutujemy na number lub null dla zgodności z typem QuoteFormValues
                 positionId: res.positionId ? Number(res.positionId) : null,
                 quantity: Number(res.estimated_quantity || 1),
                 unit: res.unit || 'h',
-                unit_price: price,
-                unit_cost: cost
+                unit_price: res.price_override ? Number(res.price_override) : (pos?.rate ? Number(pos.rate) : 0),
+                unit_cost: pos?.cost ? Number(pos.cost) : 0
             };
         });
 
@@ -82,69 +58,67 @@ export function QuoteServicesEditor({ serviceTemplates, positions }: QuoteServic
             description: template.description || '',
             pricingHistoryId: null,
             resources: mappedResources,
-            subtotal_net: 0, // Przeliczy się przy zapisie/edycji
+            subtotal_net: 0,
             total_net: 0,
             total_cost: 0,
             discount: 0
         });
-
-        toast.success(`Dodano usługę z szablonu: ${template.name}`);
+        toast.success('Zaimportowano szablon usługi');
     };
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <h3 className="text-lg font-medium flex items-center gap-2">
-                    <Layers className="h-5 w-5 text-blue-600" />
-                    Zakres Usług
-                </h3>
+            {/* HEADER SEKCJI */}
+            <div className="flex flex-col sm:flex-row items-end justify-between gap-4 border-b border-slate-200 pb-4">
+                <div>
+                    <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <Layers className="h-5 w-5 text-blue-600" />
+                        Zakres usług
+                    </h3>
 
-                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    {/* DROPDOWN DO WYBORU SZABLONU */}
+                </div>
+                <div className="flex items-center gap-2">
                     {serviceTemplates.length > 0 && (
-                        <div className="w-full sm:w-[250px]">
+                        <div className="w-[200px]">
                             <Select onValueChange={addFromTemplate}>
-                                <SelectTrigger className="bg-white">
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <Download className="h-4 w-4" />
-                                        <SelectValue placeholder="Wczytaj z szablonu..." />
-                                    </div>
+                                <SelectTrigger className="h-9 text-xs bg-white border-slate-300">
+                                    <SelectValue placeholder="Wczytaj szablon..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {serviceTemplates.map(t => (
-                                        <SelectItem key={t.id} value={String(t.id)}>
-                                            {t.name}
-                                        </SelectItem>
+                                        <SelectItem key={t.id} value={String(t.id)} className="text-xs">{t.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                     )}
-
-                    <Button onClick={addEmptyService} type="button" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap">
-                        <Plus className="mr-2 h-4 w-4" /> Pusta usługa
+                    <Button onClick={addEmptyService} type="button" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white h-9">
+                        <Plus className="mr-2 h-3.5 w-3.5" /> Nowa usługa
                     </Button>
                 </div>
             </div>
 
+            {/* LISTA USŁUG */}
             <div className="space-y-4">
                 {fields.map((field, index) => (
                     <ServiceCard
                         key={field.id}
                         index={index}
-                        positions={positions} // <--- KLUCZOWA POPRAWKA: Przekazujemy positions niżej
+                        positions={positions}
                         onRemove={() => remove(index)}
                     />
                 ))}
 
                 {fields.length === 0 && (
-                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-12 text-center bg-slate-50/50">
-                        <p className="text-slate-500 mb-4">Twoja oferta jest pusta.</p>
-                        <div className="flex justify-center gap-4">
-                            <Button onClick={addEmptyService} variant="outline">
-                                Dodaj pustą usługę
-                            </Button>
+                    <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                        <div className="p-3 bg-white rounded-full shadow-sm mb-3">
+                            <Briefcase className="h-6 w-6 text-slate-300" />
                         </div>
+                        <p className="text-slate-500 font-medium">Kosztorys jest pusty</p>
+                        <p className="text-xs text-slate-400 mb-4">Dodaj pierwszą usługę, aby rozpocząć wycenę.</p>
+                        <Button onClick={addEmptyService} variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                            Dodaj usługę
+                        </Button>
                     </div>
                 )}
             </div>
@@ -152,82 +126,76 @@ export function QuoteServicesEditor({ serviceTemplates, positions }: QuoteServic
     );
 }
 
-// --- KARTA USŁUGI ---
-// Dodajemy 'positions' do propsów
 function ServiceCard({ index, onRemove, positions }: { index: number; onRemove: () => void; positions: any[] }) {
     const [isOpen, setIsOpen] = useState(true);
-    const { register, control, watch } = useFormContext<QuoteFormValues>();
+    const { register, control } = useFormContext<QuoteFormValues>();
+    const watchedService = useWatch({ control, name: `services.${index}` });
 
-    const serviceName = watch(`services.${index}.name`);
-    // @ts-ignore
-    const resourceCount = watch(`services.${index}.resources`)?.length || 0;
+    // Obliczenia do nagłówka
+    const totalNet = Number(watchedService?.total_net || 0);
+    const resourcesCount = watchedService?.resources?.length || 0;
 
     return (
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-            <Card className="border-l-4 border-l-blue-600 shadow-sm">
-                <CardHeader className="py-3 px-4 bg-slate-50/50 flex flex-row items-center justify-between space-y-0 rounded-t-xl">
-                    <div className="flex items-center gap-3 flex-1">
-                        <CollapsibleTrigger asChild>
-                            <Button type="button" variant="ghost" size="sm" className="p-0 h-8 w-8 hover:bg-slate-200">
-                                {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </Button>
-                        </CollapsibleTrigger>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen} className="group transition-all duration-200">
+            <Card className={`border shadow-sm transition-all ${isOpen ? 'border-blue-200 ring-1 ring-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
 
-                        <div className="flex-1">
-                            {isOpen ? (
-                                <Input
-                                    {...register(`services.${index}.name`)}
-                                    className="font-medium bg-white h-8 max-w-md"
-                                    placeholder="Nazwa usługi (np. Backend Development)"
-                                />
-                            ) : (
-                                <span className="font-medium text-slate-800 ml-1">{serviceName || 'Bez nazwy'}</span>
-                            )}
-                        </div>
+                {/* NAGŁÓWEK USŁUGI */}
+                <div className="flex items-center gap-4 p-4 bg-white rounded-t-xl">
+                    <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100 shrink-0">
+                            {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                        </Button>
+                    </CollapsibleTrigger>
+
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
+                        <Input
+                            {...register(`services.${index}.name`)}
+                            className="text-lg font-bold border-transparent hover:border-slate-200 focus:border-blue-500 focus:ring-0 px-2 h-10 transition-colors bg-transparent placeholder:text-slate-300"
+                            placeholder="Nazwa usługi (np. Design System)"
+                        />
 
                         {!isOpen && (
-                            <Badge variant="secondary" className="mr-2">
-                                {resourceCount} poz.
-                            </Badge>
+                            <div className="flex items-center gap-4 text-sm animate-in fade-in slide-in-from-left-2 duration-300">
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-600 font-normal">
+                                    {resourcesCount} pozycji
+                                </Badge>
+                                <span className="font-bold text-slate-900 text-lg">
+                                    {totalNet.toFixed(2)} PLN
+                                </span>
+                            </div>
                         )}
                     </div>
 
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-slate-400 hover:text-red-600 h-8 w-8"
-                        onClick={onRemove}
-                    >
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-red-600 hover:bg-red-50 shrink-0 ml-2" onClick={onRemove}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
-                </CardHeader>
+                </div>
 
                 <CollapsibleContent>
-                    <CardContent className="p-4 pt-6 space-y-6">
-                        <FormField
-                            control={control}
-                            name={`services.${index}.description`}
-                            render={({ field }) => (
-                                <FormItem>
+                    <div className="px-4 pb-4">
+                        {/* OPIS */}
+                        <div className="mb-4 pl-12 pr-4">
+                            <FormField
+                                control={control}
+                                name={`services.${index}.description`}
+                                render={({ field }) => (
                                     <FormControl>
                                         <Textarea
                                             {...field}
                                             value={field.value || ''}
-                                            placeholder="Dodatkowy opis widoczny na ofercie (opcjonalnie)"
-                                            className="resize-none min-h-[60px] text-sm"
+                                            placeholder="Dodaj opis usługi widoczny na ofercie (opcjonalnie)..."
+                                            className="min-h-[40px] h-[40px] resize-none text-sm border-transparent bg-slate-50 focus:bg-white focus:border-blue-300 focus:h-[80px] transition-all duration-300 placeholder:text-slate-400"
                                         />
                                     </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                                )}
+                            />
+                        </div>
 
-                        <div className="pl-2 border-l-2 border-slate-100">
-                            {/* KLUCZOWA POPRAWKA: Przekazujemy positions do ServiceResourceEditor */}
+                        {/* EDYTOR ZASOBÓW (TABELA) */}
+                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
                             <ServiceResourceEditor nestIndex={index} positions={positions} />
                         </div>
-                    </CardContent>
+                    </div>
                 </CollapsibleContent>
             </Card>
         </Collapsible>

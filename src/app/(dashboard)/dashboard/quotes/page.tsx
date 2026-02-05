@@ -93,7 +93,7 @@ export default async function QuotesPage({
             Oferty
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Zarządzaj wycenami i monitoruj statusy projektów.
+            Zarządzaj wycenami i monitoruj statusy ofert.
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -133,7 +133,7 @@ export default async function QuotesPage({
           value={acceptedGlobal}
           icon={<CheckCircle className="text-emerald-600 dark:text-emerald-400" />}
           className="border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-900/10"
-          description="Wygrane projekty"
+          description="Przyjęte przez klientów"
         />
       </div>
 

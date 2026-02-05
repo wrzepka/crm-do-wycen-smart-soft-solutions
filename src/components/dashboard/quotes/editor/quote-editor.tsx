@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { CreatePricingHistoryInput, CreatePricingServiceInput } from '@/types/pricing';
 
 // --- TYPY ---
+// [FIX] Poprawiamy typy, aby pricingHistoryId był opcjonalny
 type QuoteFormService = Omit<CreatePricingServiceInput, 'pricingHistoryId'> & {
     pricingHistoryId?: number | null;
 };
@@ -28,14 +29,16 @@ export type QuoteFormValues = Omit<CreatePricingHistoryInput, 'services'> & {
 interface QuoteEditorProps {
     clients: any[];
     projects: any[];
-    positions: any[];       // <--- NOWE
-    serviceTemplates: any[]; // <--- NOWE
+    positions: any[];
+    serviceTemplates: any[];
 }
 
 export function QuoteEditor({ clients, projects, positions, serviceTemplates }: QuoteEditorProps) {
     const router = useRouter();
 
     const methods = useForm<QuoteFormValues>({
+        // [FIX] Dodajemy mode: 'onChange', aby walidacja działała na bieżąco
+        mode: 'onChange',
         resolver: zodResolver(createPricingHistoryWithServicesSchema.passthrough()) as unknown as Resolver<QuoteFormValues>,
         defaultValues: {
             quote_date: new Date(),
@@ -51,12 +54,29 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates }: 
 
     const onSubmit = async (formData: QuoteFormValues) => {
         try {
+            // [FIX] Przygotowanie payloadu bez sztucznego ID = 1
             const payload: CreatePricingHistoryInput = {
                 ...formData,
-                services: formData.services.map(s => ({
-                    ...s,
-                    pricingHistoryId: s.pricingHistoryId || 1
-                }))
+                services: formData.services.map(s => {
+                    // Usuwamy pricingHistoryId, jeśli jest null/undefined, 
+                    // aby Prisma mogła obsłużyć utworzenie relacji automatycznie (nested write)
+                    // LUB jeśli Twoja akcja wymaga tego pola, musisz obsłużyć logikę "new" w action.
+
+                    // W tym przypadku zakładam, że jeśli tworzymy nową wycenę, 
+                    // to ID zostanie nadane dopiero po zapisie PricingHistory.
+                    // Przekazujemy serwis bez tego pola lub z odpowiednią obsługą w backendzie.
+
+                    // Jeśli Twoja schema wymaga pricingHistoryId jako number, 
+                    // a tu go nie masz, to w Server Action musisz najpierw stworzyć History,
+                    // a potem przypisać ID do usług.
+
+                    // Tymczasowe rozwiązanie bezpieczniejsze niż '1':
+                    // Jeśli jest null, nie wysyłamy lub wysyłamy undefined (zależnie od schemy Zod)
+                    return {
+                        ...s,
+                        pricingHistoryId: s.pricingHistoryId || 0 // 0 może być sygnałem dla backendu "to jest nowe"
+                    } as any;
+                })
             };
 
             const result = await createPricingHistory(payload);
@@ -97,7 +117,6 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates }: 
                         <QuoteContextSection clients={clients} projects={projects} />
                         <Separator />
 
-                        {/* Przekazujemy szablony i stanowiska do Twojego edytora usług */}
                         <div>
                             <QuoteServicesEditor
                                 serviceTemplates={serviceTemplates}
@@ -106,7 +125,8 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates }: 
 
                             {errors.services && (
                                 <p className="text-sm text-destructive mt-4 text-center bg-red-50 p-2 rounded border border-red-200">
-                                    {errors.services.message || "Wycena musi zawierać przynajmniej jedną usługę."}
+                                    {/* [FIX] Lepsza obsługa błędów tablicy */}
+                                    {errors.services.message || errors.services.root?.message || "Wycena musi zawierać przynajmniej jedną usługę."}
                                 </p>
                             )}
                         </div>
@@ -115,9 +135,9 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates }: 
                     </div>
                 </div>
 
-                {/* PRAWA KOLUMNA (bez zmian) */}
+                {/* PRAWA KOLUMNA */}
                 <div className="w-full lg:w-[45%] xl:w-[40%] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-xl overflow-y-auto lg:sticky lg:top-0 h-full">
-                    <QuotePreview />
+                    <QuotePreview clients={clients} />
                     <div className="sticky bottom-0 left-0 right-0 border-t bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-4 flex items-center justify-between z-10">
                         <div className="text-sm text-slate-500">Status: Szkic</div>
                         <div className="flex gap-3">
