@@ -79,7 +79,7 @@ export async function getMostProfitService() {
           total_net: 'desc',
         },
       },
-      take: 5,
+      take: 10,
     });
 
     if (data == null || data.length == 0) {
@@ -119,6 +119,45 @@ export async function getMostProfitService() {
       totalCost: totalServiceCost.toFixed(2),
       margin: calculatedMargin.toNumber(),
     };
+  } catch (error) {
+    console.error('Błąd pobierania danych:', error); // debug log
+    throw new Error('Nie udało się pobrać statystyk. Spróbuj odświeżyć stronę.');
+  }
+}
+
+export async function getQuoteTypeCount() {
+  //AUTH
+
+  try {
+    const data = await prisma.pricing_history.groupBy({
+      by: ['status'],
+      where: {
+        is_current_version: true,
+      },
+      _count: {
+        status: true,
+      },
+    });
+
+    if (data == null || data.length == 0) {
+      return null;
+    }
+
+    const formatedData = {
+      DRAFT: 0,
+      SENT: 0,
+      ACCEPTED: 0,
+      REJECTED: 0,
+      CANCELLED: 0,
+    };
+
+    data.forEach((item) => {
+      if (item.status in formatedData) {
+        formatedData[item.status] = item._count.status;
+      }
+    });
+
+    return formatedData;
   } catch (error) {
     console.error('Błąd pobierania danych:', error); // debug log
     throw new Error('Nie udało się pobrać statystyk. Spróbuj odświeżyć stronę.');
