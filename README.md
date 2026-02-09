@@ -35,11 +35,11 @@ These components will be added as the project develops and complexity grows.
 
 | Feature            | Technology          | Status         | Purpose                                                            |
 | :----------------- | :------------------ | :------------- | :----------------------------------------------------------------- |
-| **Unit Testing**   | Jest                | ⬜ In progress | Testing the logic of Server Actions, services, and Zod validators. |
+| **Unit/Intergration Testing**   | Jest                | ⬜ In Progress | Testing the logic of Server Actions, services, and Zod validators. |
 | **E2E Testing**    | Playwright          | ⬜ To Install  | Testing full user scenarios (e.g., login, data submission).        |
 | **Charts**         | Recharts            | ⬜ To Install  | Data visualization on manager dashboards.                          |
-| **Email Service**  | Nodemailer          | ⬜ To Install  | Sending notifications and invoices.                                |
-| **PDF Generation** | @react-pdf/renderer | ⬜ To Install  | Creating dynamic reports and documents.                            |
+| **Email Service**  | Nodemailer          | ✅ Deployed  | Sending notifications and invoices.                                |
+| **PDF Generation** | @react-pdf/renderer | ✅ Deployed  | Creating dynamic reports and documents.                            |
 
 ---
 
@@ -69,7 +69,7 @@ To run the project, follow these steps:
 
 5.  **Database Setup (after migration):**
     - Generate the Prisma Client: `npx prisma generate`
-    - Run migrations (if migration files exist): `npx prisma migrate dev`
+    - Run migrations (if migration files exist): `npx prisma migrate dev` or just use `npx prisma db push` to skip migration operation.
 
 6.  **Start the development server:**
     ```bash
