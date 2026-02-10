@@ -11,6 +11,8 @@ import {
   updateTechnology,
 } from '@/lib/actions/technology-actions';
 
+//TODO: implement auth testing after adding it to the functions.
+
 describe('Technology actions (Integration)', () => {
   // close connection after every test
   afterAll(async () => {
