@@ -5,7 +5,6 @@
 import { clearDatabase, seedDatabase } from '@/__tests__/utils';
 import { prisma } from '@/lib/prisma-client';
 import { createPosition, deletePosition, updatePosition } from '@/lib/actions/position-actions';
-import { exportDefaultDeclaration } from '@babel/types';
 
 //TODO: implement auth testing after adding it to the functions.
 
