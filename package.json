@@ -9,9 +9,9 @@
     "lint": "eslint .",
     "postinstall": "npx husky init",
     "prepare": "husky",
-    "test": "dotenv -e .env.test -- jest",
-    "test:watch": "dotenv -e .env.test -- jest --watch",
-    "test:coverage": "dotenv -e .env.test -- jest --coverage",
+    "test": "dotenv -e .env.test -- jest --detectOpenHandles",
+    "test:watch": "dotenv -e .env.test -- jest --watch --detectOpenHandles",
+    "test:coverage": "dotenv -e .env.test -- jest --coverage --detectOpenHandles",
     "db:test:push": "dotenv -e .env.test -- npx prisma db push"
   },
   "dependencies": {
