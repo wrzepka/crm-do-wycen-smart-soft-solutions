@@ -2,9 +2,9 @@
  * @jest-environment node
  */
 
-import { clearDatabase } from '@/__tests__/utils';
+import { clearDatabase, seedDatabase } from '@/__tests__/utils';
 import { prisma } from '@/lib/prisma-client';
-import { createClient } from '@/lib/actions/client-actions';
+import { createClient, updateClient } from '@/lib/actions/client-actions';
 
 //TODO: implement auth testing after adding it to the functions.
 
@@ -19,8 +19,6 @@ describe('Client actions (Intergration)', () => {
   });
 
   describe('createClient', () => {
-
-
     it('should create new client', async () => {
       const formData = new FormData();
 
@@ -54,6 +52,30 @@ describe('Client actions (Intergration)', () => {
       expect(findClient).not.toBeNull();
       expect(findClient?.id).toEqual(result.id);
       expect(findClient?.client_addresses?.client_id).toEqual(result.id);
+    });
+  });
+
+  describe('updateClient', () => {
+    it('should update client', async () => {
+      const formData = new FormData();
+      formData.append('first_name', 'Janek');
+      formData.append('last_name', 'Tescik');
+
+      const seedResult = await seedDatabase();
+      const result = await updateClient(seedResult.clientId, formData);
+
+      expect(result.ok).toBe(true);
+      expect(result.message).toBeDefined();
+
+      const findClient = await prisma.clients.findFirst({
+        where: {
+          first_name: 'Janek',
+          last_name: 'Tescik',
+        },
+      });
+
+      expect(findClient).not.toBeNull();
+      expect(findClient?.id).toEqual(seedResult.clientId);
     });
   });
 });

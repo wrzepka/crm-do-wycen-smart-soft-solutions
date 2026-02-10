@@ -79,7 +79,7 @@ export async function seedDatabase() {
             postal_code: '00-001',
             street: 'Marszałkowska',
             building_number: '1',
-            nip: '5250000000',
+            nip: '5250005840',
           },
         },
       },
@@ -147,6 +147,7 @@ export async function seedDatabase() {
       juniorId: positionJunior.id,
       reactId: technologyReact.id,
       nodeId: technologyNode.id,
+      clientId: client.id,
     };
   });
 }
