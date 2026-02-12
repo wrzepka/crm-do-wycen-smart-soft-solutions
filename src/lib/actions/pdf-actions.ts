@@ -39,6 +39,7 @@ export async function generateQuotePdfAction(quoteId: number) {
       ok: true,
       message: `Pomyślnie wygenerowano pdf.`,
       previewUrl: `/api/quotes/download/${safeFileName}`,
+      fileName: safeFileName, //frontend can use this to trigger download or email sending
     };
   } catch (error) {
     console.error('Quote generating error:', error);

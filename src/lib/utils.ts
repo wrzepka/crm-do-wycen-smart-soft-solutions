@@ -32,6 +32,41 @@ export function getColorForTechnology(name: string): string {
   return TECH_COLORS[index];
 }
 
+
+export function normalizePrismaData(data: any): any {
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  if (typeof data === 'object') {
+    // Obsługa Decimal z Prisma
+    if (typeof data.toNumber === 'function') {
+      return data.toNumber();
+    }
+
+    // Obsługa tablic
+    if (Array.isArray(data)) {
+      return data.map(normalizePrismaData);
+    }
+
+    // Obsługa Date (opcjonalnie, Next.js czasem sobie radzi, ale bezpieczniej zamienić na string)
+    if (data instanceof Date) {
+      return data.toISOString();
+    }
+
+    // Rekurencja dla obiektów
+    const newObj: any = {};
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        newObj[key] = normalizePrismaData(data[key]);
+      }
+    }
+    return newObj;
+  }
+
+  return data;
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

@@ -29,8 +29,28 @@ export async function generateQuoteCode(): Promise<string> {
       }
     }
   }
-  return `OFERTA/${year}/${nextNumber.toString().padStart(3, '0')}`;
+
+
+  // (FIX):
+  // We need to check if the generated code is unique, because in rare cases (e.g. concurrent quote creation or data issues) it might already exist. 
+  // If it does, we increment the number until we find a free one. 
+  // This ensures we never return a duplicate code, even if the last quote's code is not in the expected format 
+  // or if there are gaps in the numbering. The performance impact should be minimal since we expect to find a free code within a few iterations at most.
+  while (true) {
+    const candidateCode = `OFERTA/${year}/${nextNumber.toString().padStart(3, '0')}`;
+
+    const exists = await prisma.pricing_history.findUnique({
+      where: { quote_code: candidateCode }
+    });
+
+    if (!exists) {
+      return candidateCode;
+    }
+
+    nextNumber++;
+  }
 }
+
 
 // Helper function to round numbers to two decimal places
 
@@ -196,22 +216,22 @@ export async function createNewPricingVersion(originalId: number, data: UpdatePr
       data.services && data.services.length > 0
         ? data.services
         : originalPricing.pricingServices.map((service) => {
-            // Convert original service to format compatible with UpdatePricingHistoryInput
-            const convertedService = {
-              name: service.name,
-              description: service.description,
-              discount: service.discount,
-              resources: service.serviceResources.map((resource) => ({
-                label: resource.label,
-                positionId: resource.positionId,
-                unit: resource.unit,
-                quantity: resource.quantity,
-                unit_price: resource.unit_price,
-                unit_cost: resource.unit_cost,
-              })),
-            };
-            return convertedService;
-          });
+          // Convert original service to format compatible with UpdatePricingHistoryInput
+          const convertedService = {
+            name: service.name,
+            description: service.description,
+            discount: service.discount,
+            resources: service.serviceResources.map((resource) => ({
+              label: resource.label,
+              positionId: resource.positionId,
+              unit: resource.unit,
+              quantity: resource.quantity,
+              unit_price: resource.unit_price,
+              unit_cost: resource.unit_cost,
+            })),
+          };
+          return convertedService;
+        });
 
     await prisma.$transaction(async (tx) => {
       // Mark older versions as not current

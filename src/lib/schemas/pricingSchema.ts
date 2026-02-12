@@ -96,6 +96,7 @@ export const newPricingServiceSchema = pricingServiceBaseSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  pricingHistoryId: true, // needed for creation but will be provided separately, so we omit it here to avoid confusion
 });
 
 // Schema for updating a pricing service (partial update with ID required)
