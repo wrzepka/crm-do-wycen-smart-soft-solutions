@@ -77,9 +77,9 @@ export function QuoteActionsBar({ quoteId, clientEmail, isPdfGenerated }: QuoteA
         description: result.error,
         action: isFileMissing
           ? {
-              label: 'Generuj teraz',
-              onClick: handleGenerate,
-            }
+            label: 'Generuj teraz',
+            onClick: handleGenerate,
+          }
           : undefined,
       });
     }

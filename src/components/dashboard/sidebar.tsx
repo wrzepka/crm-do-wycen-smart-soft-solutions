@@ -105,11 +105,10 @@ export function DashboardSidebar() {
 
         <div>
           <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Sprzedaż i Projekty
+            Sprzedaż
           </div>
           <div className="space-y-1">
             <SidebarLink href="/dashboard/quotes" icon={FileText} label="Wyceny i Oferty" />
-            <SidebarLink href="/dashboard/projects" icon={Briefcase} label="Projekty" />
             <SidebarLink href="/dashboard/services" icon={Layers} label="Usługi" />
           </div>
         </div>
@@ -134,14 +133,6 @@ export function DashboardSidebar() {
           </div>
         </div>
 
-        <div>
-          <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Raporty
-          </div>
-          <div className="space-y-1">
-            <SidebarLink href="/dashboard/reports" icon={PieChart} label="Raporty Skuteczności" />
-          </div>
-        </div>
       </div>
 
       {/* Bottom section (Settings/Logout) */}
