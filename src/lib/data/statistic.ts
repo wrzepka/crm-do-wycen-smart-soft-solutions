@@ -9,12 +9,12 @@ export async function getAcceptedFinancialSummary() {
         status: 'ACCEPTED',
       },
       _sum: {
-        total_gross: true, // gross revenue
+        total_net: true, // net revenue
         total_cost: true, // costs
       },
     });
 
-    const totalRevenue = result._sum.total_gross ?? new Decimal(0);
+    const totalRevenue = result._sum.total_net ?? new Decimal(0);
     const totalCost = result._sum.total_cost ?? new Decimal(0);
     const totalMargin = totalRevenue.sub(totalCost);
 
@@ -43,12 +43,12 @@ export async function getLastYearAcceptedFinancialSummary() {
         },
       },
       _sum: {
-        total_gross: true, // gross revenue
+        total_net: true, // net revenue
         total_cost: true, // costs
       },
     });
 
-    const totalRevenue = result._sum.total_gross ?? new Decimal(0);
+    const totalRevenue = result._sum.total_net ?? new Decimal(0);
     const totalCost = result._sum.total_cost ?? new Decimal(0);
     const totalMargin = totalRevenue.sub(totalCost);
 
@@ -82,12 +82,12 @@ export async function getLastMonthAcceptedFinancialSummary() {
         },
       },
       _sum: {
-        total_gross: true, // gross revenue
+        total_net: true, // net revenue
         total_cost: true, // costs
       },
     });
 
-    const totalRevenue = result._sum.total_gross ?? new Decimal(0);
+    const totalRevenue = result._sum.total_net ?? new Decimal(0);
     const totalCost = result._sum.total_cost ?? new Decimal(0);
     const totalMargin = totalRevenue.sub(totalCost);
 
