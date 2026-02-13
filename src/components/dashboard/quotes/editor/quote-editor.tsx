@@ -12,6 +12,7 @@ import { createPricingHistory, updatePricingHistory } from '@/lib/actions/pricin
 import { QuoteContextSection } from './quote-context-section';
 import { QuotePreview } from './quote-preview';
 import { QuoteServicesEditor } from './quote-services-editor';
+import { QuoteVersionSelector } from './quote-version-selector'; // [NOWOŚĆ] Import selektora
 import { Separator } from '@/components/ui/separator';
 import { useMemo } from 'react';
 import { CreatePricingHistoryInput, UpdatePricingHistoryInput } from '@/types/pricing';
@@ -67,9 +68,17 @@ interface QuoteEditorProps {
     positions: any[];
     serviceTemplates: any[];
     initialData?: any;
+    versions?: any[]; // [NOWOŚĆ] Przekazujemy listę wersji
 }
 
-export function QuoteEditor({ clients, projects, positions, serviceTemplates, initialData }: QuoteEditorProps) {
+export function QuoteEditor({
+    clients,
+    projects,
+    positions,
+    serviceTemplates,
+    initialData,
+    versions = [] // Domyślnie pusta tablica
+}: QuoteEditorProps) {
     const router = useRouter();
     const isEditMode = !!initialData;
 
@@ -171,7 +180,7 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates, in
                         discount: Number(s.discount),
                         pricingHistoryId: initialData.id,
 
-                        // [FIX] Przekazujemy pola kalkulowane usług
+                        // Pola kalkulowane
                         subtotal_net: Number(s.subtotal_net || 0),
                         total_net: Number(s.total_net || 0),
                         total_cost: Number(s.total_cost || 0),
@@ -212,7 +221,6 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates, in
                     vat_rate: Number(formData.vat_rate),
                     discount: Number(formData.discount),
 
-                    // [FIX] Przekazujemy pola kalkulowane nagłówka
                     subtotal_net: Number(formData.subtotal_net || 0),
                     total_net: Number(formData.total_net || 0),
                     total_gross: Number(formData.total_gross || 0),
@@ -224,7 +232,6 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates, in
                         discount: Number(s.discount),
                         pricingHistoryId: 0,
 
-                        // [FIX] Przekazujemy pola kalkulowane usług (TERAZ TS BĘDZIE ZADOWOLONY)
                         subtotal_net: Number(s.subtotal_net || 0),
                         total_net: Number(s.total_net || 0),
                         total_cost: Number(s.total_cost || 0),
@@ -309,6 +316,18 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates, in
 
                 {/* PRAWA KOLUMNA */}
                 <div className="w-full lg:w-[45%] xl:w-[40%] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-xl overflow-y-auto lg:sticky lg:top-0 h-full">
+
+                    {/* [NOWOŚĆ] SEKCJA WERSJONOWANIA */}
+                    {isEditMode && initialData?.quote_code && (
+                        <div className="p-4 pb-0 border-b border-slate-100 dark:border-slate-800/50">
+                            <QuoteVersionSelector
+                                currentId={initialData.id}
+                                quoteCode={initialData.quote_code}
+                                versions={versions}
+                            />
+                        </div>
+                    )}
+
                     <QuotePreview clients={clients} />
 
                     <div className="sticky bottom-0 left-0 right-0 border-t bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-4 flex items-center justify-between z-10">
@@ -316,9 +335,7 @@ export function QuoteEditor({ clients, projects, positions, serviceTemplates, in
                             Status: <span className="font-medium text-slate-900">{isEditMode ? initialData.status : 'Nowa'}</span>
                         </div>
                         <div className="flex gap-3">
-                            <Button type="button" variant="outline" disabled={isSubmitting}>
-                                <FileText className="mr-2 h-4 w-4" /> Podgląd PDF
-                            </Button>
+
                             <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">
                                 {isSubmitting ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

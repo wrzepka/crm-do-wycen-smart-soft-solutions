@@ -64,41 +64,6 @@ export function QuoteContextSection({ clients, projects }: { clients: any[], pro
                         </FormItem>
                     )}
                 />
-
-                {/* Projekt */}
-                <FormField
-                    control={control}
-                    name="project_id"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Projekt (Opcjonalnie)</FormLabel>
-                            <Select
-                                value={field.value ? String(field.value) : undefined}
-                                onValueChange={(val) => field.onChange(val === 'null' ? null : Number(val))}
-                                disabled={!selectedClientId}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={selectedClientId ? "Wybierz projekt..." : "Najpierw wybierz klienta"} />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="null">-- Brak projektu (Nowy) --</SelectItem>
-                                    {filteredProjects.map((project) => (
-                                        <SelectItem key={project.id} value={String(project.id)}>
-                                            {project.project_details?.[0]?.project_name || `Projekt #${project.id}`}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Data Wystawienia */}
                 <FormField
                     control={control}
                     name="quote_date"
@@ -143,6 +108,8 @@ export function QuoteContextSection({ clients, projects }: { clients: any[], pro
                     )}
                 />
             </div>
+
+
         </div>
     );
 }

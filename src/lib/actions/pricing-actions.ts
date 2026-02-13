@@ -16,6 +16,8 @@ import { pricing_historyUpdateInput } from '@/generated/prisma/models/pricing_hi
 import { QuoteStatus } from '@/generated/prisma/enums';
 import { TransactionClient } from '@/generated/prisma/internal/prismaNamespace';
 import { PricingServiceUpdateInput } from '@/generated/prisma/models/PricingService';
+import { createVersionSchema } from '@/lib/schemas/pricingHistorySchema';
+
 
 // import helper functions
 import {
@@ -34,6 +36,51 @@ function canEditPricing(status: string): boolean {
 }
 
 // Create new pricing history with services
+
+export async function getQuoteVersionsAction(quoteCode: string | null) {
+  try {
+    if (!quoteCode) return { ok: false, error: 'Brak kodu oferty' };
+
+    // [FIX] 1. Znajdź "bazowy" kod oferty (odcinamy -v2, -v3 itd.)
+    const baseCode = quoteCode.replace(/-v\d+$/, '');
+
+    // [FIX] 2. Pobierz wszystkie oferty zaczynające się od bazowego kodu
+    const versions = await prisma.pricing_history.findMany({
+      where: {
+        quote_code: {
+          startsWith: baseCode,
+        },
+      },
+      orderBy: { version: 'desc' }, // Najnowsze na górze
+      select: {
+        id: true,
+        version: true,
+        status: true,
+        quote_date: true,
+        total_gross: true,
+        is_current_version: true,
+        quote_code: true, // Ważne do filtrowania poniżej
+      }
+    });
+
+    // [FIX] 3. Precyzyjne filtrowanie (aby uniknąć pomyłek np. OF/1 vs OF/10)
+    const filteredVersions = versions.filter(v =>
+      v.quote_code === baseCode ||
+      v.quote_code?.startsWith(`${baseCode}-v`)
+    );
+
+    // 4. Konwersja Decimali na number dla Frontendu (bezpiecznik)
+    const safeVersions = filteredVersions.map(v => ({
+      ...v,
+      total_gross: Number(v.total_gross)
+    }));
+
+    return { ok: true, data: safeVersions };
+  } catch (error) {
+    console.error('Błąd pobierania historii:', error);
+    return { ok: false, error: 'Nie udało się pobrać historii wersji' };
+  }
+}
 
 export async function createPricingHistory(data: CreatePricingHistoryInput) {
   // TODO: Auth check
@@ -810,6 +857,54 @@ export async function updatePricingStatus(id: number, status: string, notes?: st
     return {
       ok: false,
       error: 'Wystąpił błąd podczas aktualizacji statusu wyceny.',
+    };
+  }
+}
+
+export async function createNextVersionAction(quoteId: number) {
+  // 1. Walidacja ID
+  const validation = createVersionSchema.safeParse({ quoteId });
+  if (!validation.success) {
+    return { ok: false, error: 'Nieprawidłowe ID oferty.' };
+  }
+
+  const validId = validation.data.quoteId;
+
+  try {
+    // 2. Sprawdzenie, czy oferta istnieje i ma kod
+    const currentQuote = await prisma.pricing_history.findUnique({
+      where: { id: validId }
+    });
+
+    if (!currentQuote || !currentQuote.quote_code) {
+      return { ok: false, error: "Można wersjonować tylko oferty z nadanym numerem." };
+    }
+
+    // 3. Wywołanie Helpera
+    // [FIX] Przekazujemy pustą tablicę services, aby helper sklonował stare usługi.
+    // Przekazujemy też ID, którego wymaga typ UpdatePricingHistoryInput.
+    const result = await createNewPricingVersion(validId, {
+      id: validId,
+      services: []
+    });
+
+    if (!result.ok || !result.newId) {
+      return { ok: false, error: result.error || 'Nie udało się utworzyć nowej wersji' };
+    }
+
+    revalidatePath('/dashboard/quotes');
+
+    return {
+      ok: true,
+      newId: result.newId,
+      message: 'Utworzono nową wersję oferty.'
+    };
+
+  } catch (error: any) {
+    console.error('Create Version Error:', error);
+    return {
+      ok: false,
+      error: error.message || 'Wystąpił błąd podczas tworzenia wersji.'
     };
   }
 }

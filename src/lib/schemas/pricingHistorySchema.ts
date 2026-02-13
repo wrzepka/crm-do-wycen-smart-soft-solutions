@@ -178,6 +178,10 @@ export const deletePricingHistorySchema = z.object({
   id: z.number().int().positive({ message: 'Nieprawidłowe ID wyceny' }),
 });
 
+export const createVersionSchema = z.object({
+  quoteId: z.number().int().positive({ message: "Nieprawidłowe ID oferty" }),
+});
+
 // TypeScript Types Export
 export type QuoteStatus = z.infer<typeof QuoteStatusEnum>;
 export type PricingHistory = z.infer<typeof pricingHistoryBaseSchema>;
