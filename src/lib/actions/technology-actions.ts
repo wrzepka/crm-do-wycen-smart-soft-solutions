@@ -1,4 +1,3 @@
-// src/lib/actions/technology-actions.ts
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -9,18 +8,16 @@ import {
 } from '@/lib/schemas/technologySchema';
 import { prisma } from '@/lib/prisma-client';
 
-/**
- * Stwórz nową technologię
- */
+// create technology
 export async function createTechnology(input: FormData | Record<string, unknown>) {
   try {
-    // Konwertuj input na obiekt
+    // convert FormData to object if necessary
     const payload: Record<string, unknown> =
       input instanceof FormData
         ? Object.fromEntries(input.entries())
         : (input as Record<string, unknown>);
 
-    // Walidacja danych
+    // validate input
     const validationResult = newTechnologySchema.safeParse(payload);
 
     if (!validationResult.success) {
@@ -35,7 +32,7 @@ export async function createTechnology(input: FormData | Record<string, unknown>
 
     const validData = validationResult.data;
 
-    // Sprawdź, czy technologia o tej nazwie już istnieje
+    // check if technology with the same name already exists
     const existingTechnology = await prisma.technologies.findUnique({
       where: { name: validData.name },
     });
@@ -47,7 +44,7 @@ export async function createTechnology(input: FormData | Record<string, unknown>
       };
     }
 
-    // Stwórz technologię
+    // create technology
     const created = await prisma.technologies.create({
       data: {
         name: validData.name,
@@ -55,7 +52,7 @@ export async function createTechnology(input: FormData | Record<string, unknown>
       select: { id: true, name: true },
     });
 
-    // Odśwież cache
+    // refresh cache
     revalidatePath('/dashboard/technologies');
     revalidatePath('/dashboard/employees');
 
@@ -66,9 +63,7 @@ export async function createTechnology(input: FormData | Record<string, unknown>
   }
 }
 
-/**
- * Aktualizuj technologię
- */
+// update technology
 export async function updateTechnology(
   id: number | string,
   input: FormData | Record<string, unknown>,
@@ -99,7 +94,7 @@ export async function updateTechnology(
 
     const validData = validationResult.data;
 
-    // Sprawdź, czy technologia istnieje
+    // check if technology exists
     const existingTechnology = await prisma.technologies.findUnique({
       where: { id: parsedId },
     });
@@ -111,7 +106,7 @@ export async function updateTechnology(
       };
     }
 
-    // Jeśli zmienia się nazwa, sprawdź czy nowa nazwa nie jest już zajęta
+    // check if name is being updated and if it already exists
     if (validData.name && validData.name !== existingTechnology.name) {
       const technologyWithSameName = await prisma.technologies.findUnique({
         where: { name: validData.name },
@@ -125,7 +120,7 @@ export async function updateTechnology(
       }
     }
 
-    // Przygotuj dane do aktualizacji - użyj Record zamiast Prisma.technologiesUpdateInput
+    // prepare update data
     const updateData: Record<string, unknown> = {};
     if (validData.name !== undefined) updateData.name = validData.name;
 
@@ -133,14 +128,14 @@ export async function updateTechnology(
       throw new Error('Nie podano żadnych pól do aktualizacji');
     }
 
-    // Wykonaj aktualizację
+    // update technology
     const updated = await prisma.technologies.update({
       where: { id: parsedId },
       data: updateData,
       select: { id: true, name: true },
     });
 
-    // Odśwież cache
+    // refresh cache
     revalidatePath('/dashboard/technologies');
     revalidatePath('/dashboard/employees');
 
@@ -151,9 +146,7 @@ export async function updateTechnology(
   }
 }
 
-/**
- * Usuń technologię
- */
+//delete technology
 export async function deleteTechnology(id: number | string) {
   try {
     if (!id) throw new Error('Brak ID technologii');
@@ -161,7 +154,7 @@ export async function deleteTechnology(id: number | string) {
     const parsedId = typeof id === 'string' ? parseInt(id, 10) : id;
     if (Number.isNaN(parsedId)) throw new Error('Nieprawidłowe ID technologii');
 
-    // Sprawdź, czy technologia jest przypisana do jakiegoś pracownika
+    // check if technology exists and if it is assigned to any employee
     const technologyWithEmployees = await prisma.technologies.findUnique({
       where: { id: parsedId },
       include: {
@@ -185,12 +178,12 @@ export async function deleteTechnology(id: number | string) {
       };
     }
 
-    // Usuń technologię
+    // delete technology
     await prisma.technologies.delete({
       where: { id: parsedId },
     });
 
-    // Odśwież cache
+    // refresh cache
     revalidatePath('/dashboard/technologies');
     revalidatePath('/dashboard/employees');
 
@@ -201,12 +194,10 @@ export async function deleteTechnology(id: number | string) {
   }
 }
 
-/**
- * Funkcja pomocnicza do zarządzania technologiami pracownika
- */
+//helper function to set employee technologies
 export async function setEmployeeTechnologies(employeeId: number, technologyIds: number[]) {
   try {
-    // Walidacja ID technologii
+    // Validate technologyIds using zod schema
     const validationResult = technologyIdsSchema.safeParse(technologyIds);
     if (!validationResult.success) {
       const errors = validationResult.error.flatten();
@@ -217,16 +208,16 @@ export async function setEmployeeTechnologies(employeeId: number, technologyIds:
       };
     }
 
-    // Użyj transakcji, aby zapewnić atomowość operacji
+    // use transaction to ensure atomicity of delete and create operations
     await prisma.$transaction(async (tx) => {
-      // 1. Usuń istniejące powiązania
+      // delete existing relations for the employee
       await tx.employee_technology.deleteMany({
         where: { employee_id: employeeId },
       });
 
-      // 2. Stwórz nowe powiązania (jeśli są technologie)
+      // create new relations if technologyIds is not empty
       if (technologyIds && technologyIds.length > 0) {
-        // Sprawdź, czy wszystkie technologie istnieją
+        // check if all provided technology IDs exist
         const existingTechnologies = await tx.technologies.findMany({
           where: {
             id: { in: technologyIds },
@@ -241,7 +232,7 @@ export async function setEmployeeTechnologies(employeeId: number, technologyIds:
           throw new Error(`Niektóre technologie nie istnieją: ${missingIds.join(', ')}`);
         }
 
-        // Stwórz nowe powiązania
+        // create new relations
         await tx.employee_technology.createMany({
           data: technologyIds.map((technologyId) => ({
             employee_id: employeeId,

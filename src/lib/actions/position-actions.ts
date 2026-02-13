@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma-client';
-// POPRAWKA: Importujemy typ 'positions' (model z bazy) aby uniknąć 'any'
 import { Prisma, type positions } from '@/generated/prisma/client';
 import {
   deletePositionSchema,
@@ -74,7 +73,6 @@ export async function createPosition(data: NewPositionInput) {
 export async function updatePosition(id: number, data: UpdatePositionInput) {
   //  TODO: session check with role authorization.
   // zod validation
-  // We need to merge data with id to properly pass validation
   const validation = updatePositionSchema.safeParse({ ...data, id });
   if (!validation.success) {
     const errors = validation.error.flatten();
