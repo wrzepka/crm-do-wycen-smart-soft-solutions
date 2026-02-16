@@ -2,21 +2,22 @@ import { prisma } from '@/lib/prisma-client';
 
 // Function that is used before integration tests to clear up whole db.
 export async function clearDatabase() {
-  await prisma.$transaction([
-    prisma.employee_technology.deleteMany(),
-    prisma.client_addresses.deleteMany(),
+  // Select all tables except prismas ones
+  const tablenames = await prisma.$queryRaw<Array<{ tablename: string }>>`
+    SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename NOT LIKE '_prisma_%';
+  `;
 
-    prisma.account.deleteMany(),
-    prisma.session.deleteMany(),
-    prisma.verificationToken.deleteMany(),
+  if (tablenames.length === 0) return;
 
-    prisma.clients.deleteMany(),
-    prisma.employees.deleteMany(),
-    prisma.users.deleteMany(),
+  // concat tablenames into one string
+  const tables = tablenames.map(({ tablename }) => `"${tablename}"`).join(', ');
 
-    prisma.technologies.deleteMany(),
-    prisma.positions.deleteMany(),
-  ]);
+  // Execute one big truncate operation
+  try {
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE;`);
+  } catch (error) {
+    console.error('Error during cleaning DB:', error);
+  }
 }
 
 export async function seedDatabase() {
@@ -29,7 +30,6 @@ export async function seedDatabase() {
       data: { name: 'Junior', cost: 20.0, rate: 80.0 },
     });
 
-    // 2. To samo dla technologii - przypisujemy do zmiennych
     const technologyReact = await tx.technologies.create({
       data: { name: 'React' },
     });
@@ -79,7 +79,7 @@ export async function seedDatabase() {
             postal_code: '00-001',
             street: 'Marszałkowska',
             building_number: '1',
-            nip: '5250000000',
+            nip: '5250005840',
           },
         },
       },
@@ -147,6 +147,7 @@ export async function seedDatabase() {
       juniorId: positionJunior.id,
       reactId: technologyReact.id,
       nodeId: technologyNode.id,
+      clientId: client.id,
     };
   });
 }
