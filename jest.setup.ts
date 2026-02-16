@@ -28,7 +28,13 @@ if (!dbUrl.includes('test') || !dbUrl.includes('localhost')) {
   throw new Error(errorMessage);
 }
 
-// 3. Mocking Next.js Navigation
+// 3. Mocking Next.js cache
+jest.mock('next/cache', () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
+
+// 4. Mocking Next.js Navigation
 jest.mock('next/navigation', () => ({
   useRouter() {
     return {
