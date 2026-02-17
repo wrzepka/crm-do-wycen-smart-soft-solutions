@@ -6,11 +6,11 @@ export async function getQuoteVersions(quoteCode: string | null) {
   if (!quoteCode) return [];
 
   try {
-    // 1. Znajdź "bazowy" kod oferty (np. "OFERTA/2025/001" z "OFERTA/2025/001-v2")
-    // Usuwamy końcówkę -vCYFRY, jeśli istnieje
+    // 1. Find quote id (e.g "OFERTA/2025/001" z "OFERTA/2025/001-v2")
+    // deletind '-v' if exists
     const baseCode = quoteCode.replace(/-v\d+$/, '');
 
-    // 2. Szukamy wszystkich ofert, które zaczynają się od tego kodu bazowego
+    // 2. Searching for every version with the same base code (OFERTA/2025/001, OFERTA/2025/001-v2, OFERTA/2025/001-v3 etc.)
     const versions = await prisma.pricing_history.findMany({
       where: {
         quote_code: {
@@ -21,20 +21,18 @@ export async function getQuoteVersions(quoteCode: string | null) {
         id: true,
         version: true,
         status: true,
-        quote_date: true, // Używamy quote_date (bo created_at nie masz w bazie)
+        quote_date: true,
         is_current_version: true,
-        quote_code: true, // Pobieramy kod, aby go zweryfikować poniżej
+        quote_code: true, //code to verify correct matching
       },
       orderBy: {
         version: 'desc',
       },
     });
 
-    // 3. Dodatkowe filtrowanie, aby uniknąć pomyłek (np. żeby oferta ...001 nie złapała ...0010)
-    // Akceptujemy tylko: dokładny kod bazowy LUB kod bazowy + "-v..."
-    const filteredVersions = versions.filter(v =>
-      v.quote_code === baseCode ||
-      v.quote_code?.startsWith(`${baseCode}-v`)
+    // 3. addicionally filter results to ensure we only get versions of the same quote
+    const filteredVersions = versions.filter(
+      (v) => v.quote_code === baseCode || v.quote_code?.startsWith(`${baseCode}-v`),
     );
 
     return filteredVersions;
@@ -106,5 +104,3 @@ export async function getQuoteForEmail(quoteId: number) {
     throw new Error('Nie udało się załadować wyceny. Spróbuj odświeżyć stronę.');
   }
 }
-
-

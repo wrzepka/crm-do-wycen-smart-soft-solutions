@@ -18,7 +18,6 @@ import { TransactionClient } from '@/generated/prisma/internal/prismaNamespace';
 import { PricingServiceUpdateInput } from '@/generated/prisma/models/PricingService';
 import { createVersionSchema } from '@/lib/schemas/pricingHistorySchema';
 
-
 // import helper functions
 import {
   generateQuoteCode,
@@ -58,17 +57,16 @@ export async function getQuoteVersionsAction(quoteCode: string | null) {
         total_gross: true,
         is_current_version: true,
         quote_code: true,
-      }
+      },
     });
 
-    const filteredVersions = versions.filter(v =>
-      v.quote_code === baseCode ||
-      v.quote_code?.startsWith(`${baseCode}-v`)
+    const filteredVersions = versions.filter(
+      (v) => v.quote_code === baseCode || v.quote_code?.startsWith(`${baseCode}-v`),
     );
 
-    const safeVersions = filteredVersions.map(v => ({
+    const safeVersions = filteredVersions.map((v) => ({
       ...v,
-      total_gross: Number(v.total_gross)
+      total_gross: Number(v.total_gross),
     }));
 
     return { ok: true, data: safeVersions };
@@ -310,8 +308,8 @@ export async function updatePricingHistory(data: UpdatePricingHistoryInput) {
         .map((s) => ('id' in s ? s.id : null))
         .filter((id): id is number => !!id);
 
-      // [POPRAWKA] Usunięcie warunku if (serviceIdsToKeep.length > 0).
-      // Zawsze usuwamy usługi, których nie ma w aktualnym formularzu.
+      // [FIX] Deleted if (serviceIdsToKeep.length > 0).
+      // Delete always services not included in the update, because if there are no services to keep, we should delete all existing services.
       await tx.pricingService.deleteMany({
         where: {
           pricingHistoryId: pricingHistoryId,
@@ -856,7 +854,6 @@ export async function updatePricingStatus(id: number, status: string, notes?: st
 }
 
 export async function createNextVersionAction(quoteId: number) {
-  // 1. Walidacja ID
   const validation = createVersionSchema.safeParse({ quoteId });
   if (!validation.success) {
     return { ok: false, error: 'Nieprawidłowe ID oferty.' };
@@ -865,21 +862,17 @@ export async function createNextVersionAction(quoteId: number) {
   const validId = validation.data.quoteId;
 
   try {
-    // 2. Sprawdzenie, czy oferta istnieje i ma kod
     const currentQuote = await prisma.pricing_history.findUnique({
-      where: { id: validId }
+      where: { id: validId },
     });
 
     if (!currentQuote || !currentQuote.quote_code) {
-      return { ok: false, error: "Można wersjonować tylko oferty z nadanym numerem." };
+      return { ok: false, error: 'Można wersjonować tylko oferty z nadanym numerem.' };
     }
 
-    // 3. Wywołanie Helpera
-    // [FIX] Przekazujemy pustą tablicę services, aby helper sklonował stare usługi.
-    // Przekazujemy też ID, którego wymaga typ UpdatePricingHistoryInput.
     const result = await createNewPricingVersion(validId, {
       id: validId,
-      services: []
+      services: [],
     });
 
     if (!result.ok || !result.newId) {
@@ -891,14 +884,13 @@ export async function createNextVersionAction(quoteId: number) {
     return {
       ok: true,
       newId: result.newId,
-      message: 'Utworzono nową wersję oferty.'
+      message: 'Utworzono nową wersję oferty.',
     };
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create Version Error:', error);
     return {
       ok: false,
-      error: error.message || 'Wystąpił błąd podczas tworzenia wersji.'
+      error: error instanceof Error ? error.message : 'Wystąpił błąd podczas tworzenia wersji.',
     };
   }
 }

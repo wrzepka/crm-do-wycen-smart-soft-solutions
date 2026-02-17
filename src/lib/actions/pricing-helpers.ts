@@ -33,7 +33,7 @@ export async function generateQuoteCode(): Promise<string> {
   while (true) {
     const candidateCode = `OFERTA/${year}/${nextNumber.toString().padStart(3, '0')}`;
     const exists = await prisma.pricing_history.findUnique({
-      where: { quote_code: candidateCode }
+      where: { quote_code: candidateCode },
     });
     if (!exists) {
       return candidateCode;
@@ -46,7 +46,10 @@ function roundToTwoDecimals(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-export async function getAllVersionIdsInChain(tx: TransactionClient, startId: number): Promise<number[]> {
+export async function getAllVersionIdsInChain(
+  tx: TransactionClient,
+  startId: number,
+): Promise<number[]> {
   const allVersionIds = new Set<number>();
   const queue = [startId];
   while (queue.length > 0) {
@@ -67,7 +70,10 @@ export async function getAllVersionIdsInChain(tx: TransactionClient, startId: nu
   return Array.from(allVersionIds);
 }
 
-export async function getNextPricingVersion(tx: TransactionClient, originalId: number): Promise<number> {
+export async function getNextPricingVersion(
+  tx: TransactionClient,
+  originalId: number,
+): Promise<number> {
   const allVersionIds = new Set<number>();
   const queue = [originalId];
   while (queue.length > 0) {
@@ -92,7 +98,10 @@ export async function getNextPricingVersion(tx: TransactionClient, originalId: n
   return maxVersion + 1;
 }
 
-export async function recalculatePricingHistoryTotals(tx: TransactionClient, pricingHistoryId: number) {
+export async function recalculatePricingHistoryTotals(
+  tx: TransactionClient,
+  pricingHistoryId: number,
+) {
   const pricing = await tx.pricing_history.findUnique({
     where: { id: pricingHistoryId },
     include: {
@@ -136,7 +145,10 @@ export async function recalculatePricingHistoryTotals(tx: TransactionClient, pri
   });
 }
 
-export async function markPreviousVersionsAsNotCurrent(tx: TransactionClient, originalId: number): Promise<void> {
+export async function markPreviousVersionsAsNotCurrent(
+  tx: TransactionClient,
+  originalId: number,
+): Promise<void> {
   const allVersionIds = await getAllVersionIdsInChain(tx, originalId);
   await tx.pricing_history.updateMany({
     where: {
@@ -146,7 +158,7 @@ export async function markPreviousVersionsAsNotCurrent(tx: TransactionClient, or
   });
 }
 
-// [MODYFIKACJA] Funkcja zwraca teraz newId
+// [FIX] function returns id
 export async function createNewPricingVersion(originalId: number, data: UpdatePricingHistoryInput) {
   try {
     const originalPricing = await prisma.pricing_history.findUnique({
@@ -169,24 +181,24 @@ export async function createNewPricingVersion(originalId: number, data: UpdatePr
       data.services && data.services.length > 0
         ? data.services
         : originalPricing.pricingServices.map((service) => {
-          // Convert original service to format compatible with UpdatePricingHistoryInput
-          const convertedService = {
-            name: service.name,
-            description: service.description,
-            discount: Number(service.discount),
-            resources: service.serviceResources.map((resource) => ({
-              label: resource.label,
-              positionId: resource.positionId,
-              unit: resource.unit,
-              quantity: Number(resource.quantity),
-              unit_price: Number(resource.unit_price),
-              unit_cost: Number(resource.unit_cost),
-            })),
-          };
-          return convertedService;
-        });
+            // Convert original service to format compatible with UpdatePricingHistoryInput
+            const convertedService = {
+              name: service.name,
+              description: service.description,
+              discount: Number(service.discount),
+              resources: service.serviceResources.map((resource) => ({
+                label: resource.label,
+                positionId: resource.positionId,
+                unit: resource.unit,
+                quantity: Number(resource.quantity),
+                unit_price: Number(resource.unit_price),
+                unit_cost: Number(resource.unit_cost),
+              })),
+            };
+            return convertedService;
+          });
 
-    // [FIX] Przypisujemy wynik transakcji do zmiennej, aby odczytać nowe ID
+    // [FIX] assign ID to data object to satisfy UpdatePricingHistoryInput type
     const newVersionId = await prisma.$transaction(async (tx) => {
       // Mark older versions as not current
       await markPreviousVersionsAsNotCurrent(tx, originalId);
@@ -202,7 +214,6 @@ export async function createNewPricingVersion(originalId: number, data: UpdatePr
       const currency = data.currency !== undefined ? data.currency : originalPricing.currency;
       const notes =
         data.notes || `Wersja ${nextVersion} wyceny ${originalPricing.quote_code || originalId}`;
-
 
       let quoteCode: string;
 

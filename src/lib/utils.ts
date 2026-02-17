@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import path from 'path';
 
 const TECH_COLORS = [
   'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400 border-red-200 dark:border-red-500/20',
@@ -32,33 +31,31 @@ export function getColorForTechnology(name: string): string {
   return TECH_COLORS[index];
 }
 
-
-export function normalizePrismaData(data: any): any {
+export function normalizePrismaData(data: unknown): unknown {
   if (data === null || data === undefined) {
     return data;
   }
 
+  // [FIX] converted into string  ISO, to avoid issues with wiktooor serialization
+  if (data instanceof Date) {
+    return data.toISOString();
+  }
+
   if (typeof data === 'object') {
-    // Obsługa Decimal z Prisma
-    if (typeof data.toNumber === 'function') {
-      return data.toNumber();
+    const obj = data as Record<string, unknown>;
+
+    if ('toNumber' in obj && typeof obj.toNumber === 'function') {
+      return (obj.toNumber as () => number)();
     }
 
-    // Obsługa tablic
     if (Array.isArray(data)) {
       return data.map(normalizePrismaData);
     }
 
-    // Obsługa Date (opcjonalnie, Next.js czasem sobie radzi, ale bezpieczniej zamienić na string)
-    if (data instanceof Date) {
-      return data.toISOString();
-    }
-
-    // Rekurencja dla obiektów
-    const newObj: any = {};
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        newObj[key] = normalizePrismaData(data[key]);
+    const newObj: Record<string, unknown> = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = normalizePrismaData(obj[key]);
       }
     }
     return newObj;
@@ -69,4 +66,11 @@ export function normalizePrismaData(data: any): any {
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('pl-PL', {
+    style: 'currency',
+    currency: 'PLN',
+  }).format(amount);
 }

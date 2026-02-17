@@ -126,22 +126,24 @@ export const createPricingHistoryWithServicesSchema = newPricingHistorySchema.ex
 // 2. New services added during the edit (which have no ID or `id: null` and must adhere to `createPricingServiceWithResourcesSchema`).
 // Without `z.union`, adding a new service during an update would fail validation because it lacks an ID.
 export const updatePricingHistoryWithServicesSchema = updatePricingHistorySchema.extend({
-  services: z.array(
-    z.union([
-      // Case A: Existing service (has ID) -> Use Update Schema
-      updatePricingServiceWithResourcesSchema,
+  services: z
+    .array(
+      z.union([
+        // Case A: Existing service (has ID) -> Use Update Schema
+        updatePricingServiceWithResourcesSchema,
 
-      // Case B: New service added during edit (no ID or ID is null) -> Use Create Schema
-      // We extend the create schema to explicitly allow `id` and `pricingHistoryId` to be optional/null,
-      // preventing validation errors when the frontend sends these fields as null placeholders.
-      createPricingServiceWithResourcesSchema.extend({
-        id: z.union([z.number(), z.null(), z.undefined()]).optional(),
-        pricingHistoryId: z.union([z.number(), z.null(), z.undefined()]).optional(),
-      })
-    ])
-  ).min(1, {
-    message: 'Wycena musi zawierać co najmniej jedną usługę',
-  }),
+        // Case B: New service added during edit (no ID or ID is null) -> Use Create Schema
+        // We extend the create schema to explicitly allow `id` and `pricingHistoryId` to be optional/null,
+        // preventing validation errors when the frontend sends these fields as null placeholders.
+        createPricingServiceWithResourcesSchema.extend({
+          id: z.union([z.number(), z.null(), z.undefined()]).optional(),
+          pricingHistoryId: z.union([z.number(), z.null(), z.undefined()]).optional(),
+        }),
+      ]),
+    )
+    .min(1, {
+      message: 'Wycena musi zawierać co najmniej jedną usługę',
+    }),
 });
 
 // Status-specific update schemas
@@ -179,7 +181,7 @@ export const deletePricingHistorySchema = z.object({
 });
 
 export const createVersionSchema = z.object({
-  quoteId: z.number().int().positive({ message: "Nieprawidłowe ID oferty" }),
+  quoteId: z.number().int().positive({ message: 'Nieprawidłowe ID oferty' }),
 });
 
 // TypeScript Types Export
