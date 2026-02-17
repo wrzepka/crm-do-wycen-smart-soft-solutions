@@ -41,17 +41,15 @@ export async function getQuoteVersionsAction(quoteCode: string | null) {
   try {
     if (!quoteCode) return { ok: false, error: 'Brak kodu oferty' };
 
-    // [FIX] 1. Znajdź "bazowy" kod oferty (odcinamy -v2, -v3 itd.)
     const baseCode = quoteCode.replace(/-v\d+$/, '');
 
-    // [FIX] 2. Pobierz wszystkie oferty zaczynające się od bazowego kodu
     const versions = await prisma.pricing_history.findMany({
       where: {
         quote_code: {
           startsWith: baseCode,
         },
       },
-      orderBy: { version: 'desc' }, // Najnowsze na górze
+      orderBy: { version: 'desc' },
       select: {
         id: true,
         version: true,
@@ -59,17 +57,15 @@ export async function getQuoteVersionsAction(quoteCode: string | null) {
         quote_date: true,
         total_gross: true,
         is_current_version: true,
-        quote_code: true, // Ważne do filtrowania poniżej
+        quote_code: true,
       }
     });
 
-    // [FIX] 3. Precyzyjne filtrowanie (aby uniknąć pomyłek np. OF/1 vs OF/10)
     const filteredVersions = versions.filter(v =>
       v.quote_code === baseCode ||
       v.quote_code?.startsWith(`${baseCode}-v`)
     );
 
-    // 4. Konwersja Decimali na number dla Frontendu (bezpiecznik)
     const safeVersions = filteredVersions.map(v => ({
       ...v,
       total_gross: Number(v.total_gross)
@@ -314,18 +310,16 @@ export async function updatePricingHistory(data: UpdatePricingHistoryInput) {
         .map((s) => ('id' in s ? s.id : null))
         .filter((id): id is number => !!id);
 
-      // Only delete existing services if we're explicitly updating at least one
-      // This prevents accidental deletion when adding only new services
-      if (serviceIdsToKeep.length > 0) {
-        await tx.pricingService.deleteMany({
-          where: {
-            pricingHistoryId: pricingHistoryId,
-            id: {
-              notIn: serviceIdsToKeep,
-            },
+      // [POPRAWKA] Usunięcie warunku if (serviceIdsToKeep.length > 0).
+      // Zawsze usuwamy usługi, których nie ma w aktualnym formularzu.
+      await tx.pricingService.deleteMany({
+        where: {
+          pricingHistoryId: pricingHistoryId,
+          id: {
+            notIn: serviceIdsToKeep,
           },
-        });
-      }
+        },
+      });
 
       // Update or create each service
       for (const service of services) {

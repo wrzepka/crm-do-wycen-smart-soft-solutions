@@ -145,7 +145,8 @@ export function QuotePreview({ clients }: QuotePreviewProps) {
                 >
                     <div className="px-8 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setIsServicesExpanded(!isServicesExpanded)}>
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Zakres usług</h3>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400">
+                        {/* [POPRAWKA] Dodano type="button" */}
+                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400">
                             {isServicesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                     </div>
