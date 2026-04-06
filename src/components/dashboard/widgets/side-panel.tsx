@@ -1,99 +1,118 @@
-import { FileText, Users, Briefcase, FileCheck, XCircle, CheckCircle2 } from 'lucide-react';
+'use client';
+
+import { Plus, Users, LayoutTemplate, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-export function QuickActions() {
+// MOCK DATA
+const topServices = [
+  {
+    name: 'Wdrożenia ERP',
+    quantity: 12, // sales quantinty
+    totalNet: '45 000', // income from service
+    color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
+  },
+  {
+    name: 'Konsultacje IT',
+    quantity: 24,
+    totalNet: '28 500',
+    color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400',
+  },
+  {
+    name: 'Audyt Bezpieczeństwa',
+    quantity: 5,
+    totalNet: '15 000',
+    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400',
+  },
+];
+
+export function SidePanelWidgets() {
   return (
-    <Card className="bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground border-none shadow-lg">
-      <CardContent className="p-6">
-        <h3 className="text-lg font-bold mb-1">Szybkie akcje</h3>
-        <p className="text-primary-foreground/80 text-sm mb-6">Co chcesz teraz zrobić?</p>
+    <div className="space-y-6">
+      {/* QUICK ACTIONS */}
+      <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white border-none shadow-md">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-bold mb-2">Szybkie akcje</h3>
+          <p className="text-blue-100 text-sm mb-6 opacity-90">
+            Zarządzaj swoimi wycenami i klientami.
+          </p>
 
-        <div className="flex flex-col gap-3">
-          <Button
-            variant="secondary"
-            className="w-full h-11 justify-start gap-3 font-semibold shadow-sm text-primary"
-          >
-            <FileText size={18} /> Utwórz nową wycenę
-          </Button>
-
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-3">
             <Button
-              variant="outline"
-              className="h-20 flex-col gap-2 border-white/20 bg-white/10 hover:bg-white/20 text-white hover:text-white border-0"
+              asChild
+              className="w-full bg-white text-blue-700 hover:bg-blue-50 border-0 font-semibold h-10 shadow-sm"
             >
-              <Users size={20} /> <span className="text-xs">Dodaj Klienta</span>
+              <Link href="/dashboard/quotes/new">
+                <Plus className="mr-2 h-4 w-4" /> Nowa Wycena
+              </Link>
             </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex-col gap-2 border-white/20 bg-white/10 hover:bg-white/20 text-white hover:text-white border-0"
-            >
-              <Briefcase size={20} /> <span className="text-xs">Nowy Projekt</span>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-export function ActivitiesList() {
-  const activities = [
-    {
-      id: 1,
-      text: 'Nowa wycena dla TechSoft',
-      time: '2 min temu',
-      icon: FileCheck,
-      color: 'text-blue-500',
-    },
-    {
-      id: 2,
-      text: 'Dodano klienta: ModaPolska',
-      time: '1 godz. temu',
-      icon: Users,
-      color: 'text-emerald-500',
-    },
-    {
-      id: 3,
-      text: 'Odrzucona oferta (ID #124)',
-      time: '3 godz. temu',
-      icon: XCircle,
-      color: 'text-red-500',
-    },
-    {
-      id: 4,
-      text: "Projekt 'Migracja' zakończony",
-      time: 'Wczoraj',
-      icon: CheckCircle2,
-      color: 'text-indigo-500',
-    },
-  ];
-
-  return (
-    <Card className="flex-1">
-      <CardHeader>
-        <CardTitle className="text-lg">Ostatnia aktywność</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {activities.map((activity) => (
-            <div key={activity.id} className="flex gap-4">
-              {/* Dynamic text color for icon */}
-              <div className={cn('mt-0.5', activity.color)}>
-                <activity.icon size={18} />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium leading-none text-foreground">{activity.text}</p>
-                <p className="text-xs text-muted-foreground">{activity.time}</p>
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                asChild
+                className="border-white/20 hover:bg-white/10 text-white hover:text-white bg-transparent h-10 border"
+              >
+                <Link href="/dashboard/clients">
+                  <Users className="mr-2 h-4 w-4" /> Klient
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                asChild
+                className="border-white/20 hover:bg-white/10 text-white hover:text-white bg-transparent h-10 border"
+              >
+                <Link href="/dashboard/services">
+                  <LayoutTemplate className="mr-2 h-4 w-4" /> Usługa
+                </Link>
+              </Button>
             </div>
-          ))}
-        </div>
-        <Button variant="link" className="w-full mt-6 text-muted-foreground hover:text-primary">
-          Zobacz całą historię
-        </Button>
-      </CardContent>
-    </Card>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* TOP SERVICES */}
+      <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B1121]">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold">Top Usługi</CardTitle>
+            <Trophy className="h-4 w-4 text-amber-500" />
+          </div>
+          <CardDescription>Najlepsze wyniki sprzedażowe</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {topServices.map((service, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex items-center justify-center w-8 h-8 rounded-md text-xs font-bold',
+                      service.color,
+                    )}
+                  >
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                      {service.name}
+                    </p>
+                    <p className="text-xs text-slate-500">{service.quantity} sprzedaży</p>
+                  </div>
+                </div>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  {service.totalNet} zł
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

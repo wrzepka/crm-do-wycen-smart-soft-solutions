@@ -7,11 +7,9 @@ import {
   LayoutDashboard,
   Users,
   Building2,
-  Briefcase,
   FileText,
   Settings,
   LogOut,
-  PieChart,
   Layers,
   Cpu,
   BriefcaseBusiness,
@@ -95,13 +93,19 @@ export function DashboardSidebar() {
        */}
       <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8 sidebar-scrollbar">
         <div>
-          <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Sprzedaż i Projekty
-          </div>
+          <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider"></div>
           <div className="space-y-1">
             <SidebarLink href="/dashboard" icon={LayoutDashboard} label="Pulpit" />
+          </div>
+        </div>
+
+        <div>
+          <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Sprzedaż
+          </div>
+          <div className="space-y-1">
             <SidebarLink href="/dashboard/quotes" icon={FileText} label="Wyceny i Oferty" />
-            <SidebarLink href="/dashboard/projects" icon={Briefcase} label="Projekty" />
+            <SidebarLink href="/dashboard/services" icon={Layers} label="Usługi" />
           </div>
         </div>
 
@@ -122,16 +126,6 @@ export function DashboardSidebar() {
           <div className="space-y-1">
             <SidebarLink href="/dashboard/positions" icon={BriefcaseBusiness} label="Stanowiska" />
             <SidebarLink href="/dashboard/technologies" icon={Cpu} label="Technologie" />
-            <SidebarLink href="/dashboard/components" icon={Layers} label="Usługi" />
-          </div>
-        </div>
-
-        <div>
-          <div className="px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Raporty
-          </div>
-          <div className="space-y-1">
-            <SidebarLink href="/dashboard/reports" icon={PieChart} label="Raporty Skuteczności" />
           </div>
         </div>
       </div>

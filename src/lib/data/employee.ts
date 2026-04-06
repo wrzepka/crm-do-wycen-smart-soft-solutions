@@ -1,39 +1,9 @@
 import { prisma } from '@/lib/prisma-client';
-import { EmployeeWithRelations } from '@/types/employee';
 import { EmployeeStatus } from '@/generated/prisma/enums';
-// import { getServerSession } from 'next-auth';
-// import { authOptions } from '@/lib/auth';
 
 export function isValidStatus(val: string): val is EmployeeStatus {
   return Object.values(EmployeeStatus).includes(val as EmployeeStatus);
 }
-
-// export async function getEmployees(): Promise<EmployeeWithRelations[]> {
-//   // const session = getServerSession();
-//
-//   /*  if (!session) { // in future check also role!
-//         return [];
-//     }*/
-//
-//   try {
-//     const employees = await prisma.employees.findMany({
-//       orderBy: { last_name: 'asc' },
-//       include: {
-//         employee_technology: {
-//           include: {
-//             technologies: true,
-//           },
-//         },
-//         position: true,
-//       },
-//     });
-//
-//     return employees;
-//   } catch (error) {
-//     console.error('Błąd pobierania pracowników:', error); // debug log
-//     throw new Error('Nie udało się załadować listy pracowników. Spróbuj odświeżyć stronę.');
-//   }
-// }
 
 // This is safe version of getEmployees(), without hourly_rate.
 export async function getSafeEmployees(

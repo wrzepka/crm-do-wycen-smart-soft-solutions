@@ -91,15 +91,18 @@ export const pricingHistoryBaseSchema = z.object({
   previousVersionId: z.number().int().positive().nullable().optional(),
 });
 
-// Schema for creating a new pricing history (without calculated fields)
+// Schema for creating a new pricing history
+// [CHANGED] Removed `quote_date` and calculated totals (subtotal_net, total_net, etc.) from `omit`.
+// REASON: The frontend calculates these values live and sends them to the backend.
+// Excluding them here caused validation errors because the received payload contained "unknown" fields (in strict mode) or missing required fields.
 export const newPricingHistorySchema = pricingHistoryBaseSchema.omit({
   id: true,
-  quote_date: true,
+  // quote_date: true, // ALLOWED: User can select a custom date
   quote_code: true,
-  subtotal_net: true,
-  total_net: true,
-  total_gross: true,
-  total_cost: true,
+  // subtotal_net: true, // ALLOWED: Sent from frontend calculations
+  // total_net: true,
+  // total_gross: true,
+  // total_cost: true,
 });
 
 // Schema for updating a pricing history (partial update with ID required)
@@ -117,10 +120,30 @@ export const createPricingHistoryWithServicesSchema = newPricingHistorySchema.ex
 });
 
 // Schema for updating pricing history with services
+// [CHANGED] Using `z.union` for the `services` array validation.
+// REASON: During an edit session, the `services` array can contain two types of items:
+// 1. Existing services (which have an ID and must adhere to `updatePricingServiceWithResourcesSchema`).
+// 2. New services added during the edit (which have no ID or `id: null` and must adhere to `createPricingServiceWithResourcesSchema`).
+// Without `z.union`, adding a new service during an update would fail validation because it lacks an ID.
 export const updatePricingHistoryWithServicesSchema = updatePricingHistorySchema.extend({
-  services: z.array(updatePricingServiceWithResourcesSchema).min(1, {
-    message: 'Wycena musi zawierać co najmniej jedną usługę',
-  }),
+  services: z
+    .array(
+      z.union([
+        // Case A: Existing service (has ID) -> Use Update Schema
+        updatePricingServiceWithResourcesSchema,
+
+        // Case B: New service added during edit (no ID or ID is null) -> Use Create Schema
+        // We extend the create schema to explicitly allow `id` and `pricingHistoryId` to be optional/null,
+        // preventing validation errors when the frontend sends these fields as null placeholders.
+        createPricingServiceWithResourcesSchema.extend({
+          id: z.union([z.number(), z.null(), z.undefined()]).optional(),
+          pricingHistoryId: z.union([z.number(), z.null(), z.undefined()]).optional(),
+        }),
+      ]),
+    )
+    .min(1, {
+      message: 'Wycena musi zawierać co najmniej jedną usługę',
+    }),
 });
 
 // Status-specific update schemas
@@ -155,6 +178,10 @@ export const cancelledPricingHistorySchema = z.object({
 // Schema for deleting pricing history
 export const deletePricingHistorySchema = z.object({
   id: z.number().int().positive({ message: 'Nieprawidłowe ID wyceny' }),
+});
+
+export const createVersionSchema = z.object({
+  quoteId: z.number().int().positive({ message: 'Nieprawidłowe ID oferty' }),
 });
 
 // TypeScript Types Export

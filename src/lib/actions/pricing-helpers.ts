@@ -29,16 +29,22 @@ export async function generateQuoteCode(): Promise<string> {
       }
     }
   }
-  return `OFERTA/${year}/${nextNumber.toString().padStart(3, '0')}`;
-}
 
-// Helper function to round numbers to two decimal places
+  while (true) {
+    const candidateCode = `OFERTA/${year}/${nextNumber.toString().padStart(3, '0')}`;
+    const exists = await prisma.pricing_history.findUnique({
+      where: { quote_code: candidateCode },
+    });
+    if (!exists) {
+      return candidateCode;
+    }
+    nextNumber++;
+  }
+}
 
 function roundToTwoDecimals(value: number): number {
   return Math.round(value * 100) / 100;
 }
-
-// Helper function to get all version IDs in the version chain
 
 export async function getAllVersionIdsInChain(
   tx: TransactionClient,
@@ -46,7 +52,6 @@ export async function getAllVersionIdsInChain(
 ): Promise<number[]> {
   const allVersionIds = new Set<number>();
   const queue = [startId];
-
   while (queue.length > 0) {
     const currentId = queue.shift()!;
     if (!allVersionIds.has(currentId)) {
@@ -62,11 +67,8 @@ export async function getAllVersionIdsInChain(
       }
     }
   }
-
   return Array.from(allVersionIds);
 }
-
-// Helper function to get the next version number in the version chain
 
 export async function getNextPricingVersion(
   tx: TransactionClient,
@@ -96,8 +98,6 @@ export async function getNextPricingVersion(
   return maxVersion + 1;
 }
 
-// Helper function to recalculate pricing history totals
-
 export async function recalculatePricingHistoryTotals(
   tx: TransactionClient,
   pricingHistoryId: number,
@@ -110,25 +110,17 @@ export async function recalculatePricingHistoryTotals(
       },
     },
   });
-
   if (!pricing) return;
-
   let subtotalNet = 0;
   let totalCost = 0;
-
-  // Przelicz każdą usługę
   for (const service of pricing.pricingServices) {
     let serviceSubtotal = 0;
     let serviceCost = 0;
-
     for (const resource of service.serviceResources) {
       serviceSubtotal += Number(resource.total_net);
       serviceCost += Number(resource.total_cost);
     }
-
     const serviceTotalNet = roundToTwoDecimals(serviceSubtotal - Number(service.discount));
-
-    // Aktualizuj usługę
     await tx.pricingService.update({
       where: { id: service.id },
       data: {
@@ -137,15 +129,11 @@ export async function recalculatePricingHistoryTotals(
         total_cost: roundToTwoDecimals(serviceCost),
       },
     });
-
     subtotalNet += serviceSubtotal;
     totalCost += serviceCost;
   }
-
-  // Przelicz sumy końcowe wyceny
   const totalNet = roundToTwoDecimals(subtotalNet - Number(pricing.discount));
   const totalGross = roundToTwoDecimals(totalNet * (1 + Number(pricing.vat_rate) / 100));
-
   await tx.pricing_history.update({
     where: { id: pricingHistoryId },
     data: {
@@ -156,8 +144,6 @@ export async function recalculatePricingHistoryTotals(
     },
   });
 }
-
-// Helper function to mark all previous versions as not current
 
 export async function markPreviousVersionsAsNotCurrent(
   tx: TransactionClient,
@@ -172,8 +158,7 @@ export async function markPreviousVersionsAsNotCurrent(
   });
 }
 
-// Helper function to create new pricing version when editing is not allowed
-
+// [FIX] function returns id
 export async function createNewPricingVersion(originalId: number, data: UpdatePricingHistoryInput) {
   try {
     const originalPricing = await prisma.pricing_history.findUnique({
@@ -200,20 +185,21 @@ export async function createNewPricingVersion(originalId: number, data: UpdatePr
             const convertedService = {
               name: service.name,
               description: service.description,
-              discount: service.discount,
+              discount: Number(service.discount),
               resources: service.serviceResources.map((resource) => ({
                 label: resource.label,
                 positionId: resource.positionId,
                 unit: resource.unit,
-                quantity: resource.quantity,
-                unit_price: resource.unit_price,
-                unit_cost: resource.unit_cost,
+                quantity: Number(resource.quantity),
+                unit_price: Number(resource.unit_price),
+                unit_cost: Number(resource.unit_cost),
               })),
             };
             return convertedService;
           });
 
-    await prisma.$transaction(async (tx) => {
+    // [FIX] assign ID to data object to satisfy UpdatePricingHistoryInput type
+    const newVersionId = await prisma.$transaction(async (tx) => {
       // Mark older versions as not current
       await markPreviousVersionsAsNotCurrent(tx, originalId);
 
@@ -229,9 +215,18 @@ export async function createNewPricingVersion(originalId: number, data: UpdatePr
       const notes =
         data.notes || `Wersja ${nextVersion} wyceny ${originalPricing.quote_code || originalId}`;
 
-      const quoteCode = originalPricing.quote_code
-        ? `${originalPricing.quote_code}-v${nextVersion}`
-        : await generateQuoteCode();
+      let quoteCode: string;
+
+      if (originalPricing.quote_code) {
+        // Usuwamy ewentualną starą końcówkę wersji (-vX)
+        const baseCode = originalPricing.quote_code.replace(/-v\d+$/, '');
+        // Doklejamy nową wersję
+        quoteCode = `${baseCode}-v${nextVersion}`;
+      } else {
+        // Jeśli to była stara oferta bez kodu, generujemy nowy
+        quoteCode = await generateQuoteCode();
+      }
+
       // Create new pricing history
       const createdPricing = await tx.pricing_history.create({
         data: {
@@ -345,14 +340,19 @@ export async function createNewPricingVersion(originalId: number, data: UpdatePr
           total_cost: overallTotalCost,
         },
       });
+
+      // [FIX] Zwracamy ID z transakcji
+      return createdPricing.id;
     });
 
-    revalidatePath('/dashboard/pricing');
-    revalidatePath('/dashboard/clients/[clientId]/pricing', 'page');
+    // Zaktualizuj ścieżki
+    revalidatePath('/dashboard/quotes');
+    revalidatePath(`/dashboard/quotes/${originalId}/edit`);
 
     return {
       ok: true,
       message: 'Utworzono nową wersję wyceny z poprawkami.',
+      newId: newVersionId, // [FIX] Przekazujemy ID do frontendu
     };
   } catch (error) {
     console.error('Create new pricing version error:', error);

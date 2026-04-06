@@ -1,124 +1,110 @@
-import { Download } from 'lucide-react';
+'use client';
+
+import { ArrowUpRight, Clock, CheckCircle2, XCircle, FileText, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+
+const statusConfig: Record<string, { label: string; icon: LucideIcon; style: string }> = {
+  SENT: {
+    label: 'Wysłana',
+    icon: Clock,
+    style:
+      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800',
+  },
+  ACCEPTED: {
+    label: 'Zaakceptowana',
+    icon: CheckCircle2,
+    style:
+      'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800',
+  },
+  REJECTED: {
+    label: 'Odrzucona',
+    icon: XCircle,
+    style:
+      'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+  },
+  DRAFT: {
+    label: 'Szkic',
+    icon: FileText,
+    style:
+      'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+  },
+};
 
 interface Quote {
-  id: string;
+  id: number;
   client: string;
   project: string;
   amount: string;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  status: string;
+  date: string;
+  code: string;
 }
 
-const recentQuotes: Quote[] = [
-  {
-    id: 'EST-2024-001',
-    client: 'TechCorp Sp. z o.o.',
-    project: 'System ERP - Moduł Magazyn',
-    amount: '45 000 zł',
-    status: 'sent',
-  },
-  {
-    id: 'EST-2024-002',
-    client: 'Kancelaria Prawna Lex',
-    project: 'Strona WWW + CMS',
-    amount: '12 500 zł',
-    status: 'draft',
-  },
-  {
-    id: 'EST-2024-003',
-    client: 'Logistics Pro',
-    project: 'Aplikacja mobilna Kierowcy',
-    amount: '85 000 zł',
-    status: 'accepted',
-  },
-  {
-    id: 'EST-2024-004',
-    client: 'Green Energy SA',
-    project: 'Audyt bezpieczeństwa',
-    amount: '8 000 zł',
-    status: 'rejected',
-  },
-];
-
-function StatusBadge({ status }: { status: string }) {
-  // FIX: Dodano typ Record<string, string>, dzięki czemu TypeScript wie,
-  // że możemy używać dowolnego stringa jako klucza (index signature).
-  const styles: Record<string, string> = {
-    draft: 'bg-slate-100 text-slate-700',
-    sent: 'bg-blue-50 text-blue-700',
-    accepted: 'bg-emerald-50 text-emerald-700',
-    rejected: 'bg-red-50 text-red-700',
-  };
-
-  const labels: Record<string, string> = {
-    draft: 'Szkic',
-    sent: 'Wysłana',
-    accepted: 'Zaakceptowana',
-    rejected: 'Odrzucona',
-  };
-
-  return (
-    // FIX: Usunięto 'as any'. Dodano fallback (|| styles.draft),
-    // na wypadek gdyby przyszedł status spoza listy.
-    <span
-      className={cn(
-        'inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ring-black/5',
-        styles[status] || styles.draft,
-      )}
-    >
-      {labels[status] || status}
-    </span>
-  );
+interface RecentQuotesProps {
+  data: Quote[];
 }
 
-export function RecentQuotes() {
+export function RecentQuotes({ data }: RecentQuotesProps) {
   return (
-    <Card className="h-full">
+    <Card className="col-span-4 lg:col-span-3">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-bold">Ostatnie Wyceny</CardTitle>
-        <Button variant="ghost" size="sm" className="text-primary font-medium">
-          Wszystkie
+        <CardTitle className="text-base font-semibold">Ostatnie wyceny</CardTitle>
+        <Button variant="ghost" size="sm" className="text-xs" asChild>
+          <Link href="/dashboard/quotes">
+            Wszystkie <ArrowUpRight className="ml-2 h-3 w-3" />
+          </Link>
         </Button>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50 text-muted-foreground">
-              <tr>
-                <th className="px-6 py-3 font-medium">Nr Oferty</th>
-                <th className="px-6 py-3 font-medium">Klient & Projekt</th>
-                <th className="px-6 py-3 font-medium">Kwota</th>
-                <th className="px-6 py-3 font-medium">Status</th>
-                <th className="px-6 py-3 font-medium text-right">Akcje</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {recentQuotes.map((quote) => (
-                <tr key={quote.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{quote.id}</td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-foreground">{quote.project}</div>
-                    <div className="text-xs text-muted-foreground">{quote.client}</div>
-                  </td>
-                  <td className="px-6 py-4 font-medium">{quote.amount}</td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={quote.status} />
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+      <CardContent>
+        <div className="space-y-4">
+          {data.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">Brak ostatnich wycen.</p>
+          ) : (
+            data.map((quote) => {
+              const config = statusConfig[quote.status] || statusConfig['DRAFT'];
+              const Icon = config.icon;
+
+              return (
+                <Link
+                  href={`/dashboard/quotes/${quote.id}/edit`}
+                  key={quote.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {quote.client}
+                      </span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 rounded">
+                          {quote.code}
+                        </span>
+                        <span className="text-xs text-slate-500 truncate max-w-[150px] sm:max-w-[200px]">
+                          {quote.project}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300 hidden sm:block">
+                      {quote.amount}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className={`gap-1 px-2 py-0.5 text-[10px] border ${config.style}`}
                     >
-                      <Download size={16} />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <Icon className="h-3 w-3" />
+                      {config.label}
+                    </Badge>
+                  </div>
+                </Link>
+              );
+            })
+          )}
         </div>
       </CardContent>
     </Card>

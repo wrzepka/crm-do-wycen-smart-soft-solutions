@@ -16,6 +16,7 @@ import { pricing_historyUpdateInput } from '@/generated/prisma/models/pricing_hi
 import { QuoteStatus } from '@/generated/prisma/enums';
 import { TransactionClient } from '@/generated/prisma/internal/prismaNamespace';
 import { PricingServiceUpdateInput } from '@/generated/prisma/models/PricingService';
+import { createVersionSchema } from '@/lib/schemas/pricingHistorySchema';
 
 // import helper functions
 import {
@@ -34,6 +35,46 @@ function canEditPricing(status: string): boolean {
 }
 
 // Create new pricing history with services
+
+export async function getQuoteVersionsAction(quoteCode: string | null) {
+  try {
+    if (!quoteCode) return { ok: false, error: 'Brak kodu oferty' };
+
+    const baseCode = quoteCode.replace(/-v\d+$/, '');
+
+    const versions = await prisma.pricing_history.findMany({
+      where: {
+        quote_code: {
+          startsWith: baseCode,
+        },
+      },
+      orderBy: { version: 'desc' },
+      select: {
+        id: true,
+        version: true,
+        status: true,
+        quote_date: true,
+        total_gross: true,
+        is_current_version: true,
+        quote_code: true,
+      },
+    });
+
+    const filteredVersions = versions.filter(
+      (v) => v.quote_code === baseCode || v.quote_code?.startsWith(`${baseCode}-v`),
+    );
+
+    const safeVersions = filteredVersions.map((v) => ({
+      ...v,
+      total_gross: Number(v.total_gross),
+    }));
+
+    return { ok: true, data: safeVersions };
+  } catch (error) {
+    console.error('Błąd pobierania historii:', error);
+    return { ok: false, error: 'Nie udało się pobrać historii wersji' };
+  }
+}
 
 export async function createPricingHistory(data: CreatePricingHistoryInput) {
   // TODO: Auth check
@@ -267,18 +308,16 @@ export async function updatePricingHistory(data: UpdatePricingHistoryInput) {
         .map((s) => ('id' in s ? s.id : null))
         .filter((id): id is number => !!id);
 
-      // Only delete existing services if we're explicitly updating at least one
-      // This prevents accidental deletion when adding only new services
-      if (serviceIdsToKeep.length > 0) {
-        await tx.pricingService.deleteMany({
-          where: {
-            pricingHistoryId: pricingHistoryId,
-            id: {
-              notIn: serviceIdsToKeep,
-            },
+      // [FIX] Deleted if (serviceIdsToKeep.length > 0).
+      // Delete always services not included in the update, because if there are no services to keep, we should delete all existing services.
+      await tx.pricingService.deleteMany({
+        where: {
+          pricingHistoryId: pricingHistoryId,
+          id: {
+            notIn: serviceIdsToKeep,
           },
-        });
-      }
+        },
+      });
 
       // Update or create each service
       for (const service of services) {
@@ -810,6 +849,48 @@ export async function updatePricingStatus(id: number, status: string, notes?: st
     return {
       ok: false,
       error: 'Wystąpił błąd podczas aktualizacji statusu wyceny.',
+    };
+  }
+}
+
+export async function createNextVersionAction(quoteId: number) {
+  const validation = createVersionSchema.safeParse({ quoteId });
+  if (!validation.success) {
+    return { ok: false, error: 'Nieprawidłowe ID oferty.' };
+  }
+
+  const validId = validation.data.quoteId;
+
+  try {
+    const currentQuote = await prisma.pricing_history.findUnique({
+      where: { id: validId },
+    });
+
+    if (!currentQuote || !currentQuote.quote_code) {
+      return { ok: false, error: 'Można wersjonować tylko oferty z nadanym numerem.' };
+    }
+
+    const result = await createNewPricingVersion(validId, {
+      id: validId,
+      services: [],
+    });
+
+    if (!result.ok || !result.newId) {
+      return { ok: false, error: result.error || 'Nie udało się utworzyć nowej wersji' };
+    }
+
+    revalidatePath('/dashboard/quotes');
+
+    return {
+      ok: true,
+      newId: result.newId,
+      message: 'Utworzono nową wersję oferty.',
+    };
+  } catch (error: unknown) {
+    console.error('Create Version Error:', error);
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Wystąpił błąd podczas tworzenia wersji.',
     };
   }
 }
