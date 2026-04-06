@@ -6,12 +6,7 @@ import { prisma } from '@/lib/prisma-client';
 import type { Prisma } from '@/generated/prisma/client';
 import { setEmployeeTechnologies } from '@/lib/actions/technology-actions';
 
-/**
- * Parses FormData or Record input into structured data
- * Handles technology_ids array and position_id field
- * @param input - FormData or Record<string, unknown>
- * @returns Object with data, technologyIds, and positionId
- */
+// Helper function to parse FormData or Record input for employee actions
 function parseFormData(input: FormData | Record<string, unknown>) {
   if (!(input instanceof FormData)) {
     // For JSON input, return as-is (assumes no technology updates)
@@ -21,13 +16,12 @@ function parseFormData(input: FormData | Record<string, unknown>) {
   const formData = input;
   const data: Record<string, unknown> = {};
   const technologyIds: number[] = [];
-  // Zmieniamy domyślną wartość na undefined, aby odróżnić "brak zmiany" od "ustaw na null"
+  // positionId can be number, null (to clear), or undefined (no change)
   let positionId: number | null | undefined = undefined;
 
   // Iterate through FormData entries
   for (const [key, value] of formData.entries()) {
     // Handle technology_ids (can be array with brackets or repeated keys)
-    // FIX: getting key no matter the format
     if (key === 'technology_ids' || key.startsWith('technology_ids[')) {
       const numValue = Number(value);
       if (!isNaN(numValue) && numValue > 0) {
@@ -58,11 +52,7 @@ function parseFormData(input: FormData | Record<string, unknown>) {
   };
 }
 
-/**
- * Converts various date formats to Date object or null
- * @param value - Unknown date value (string, Date, etc.)
- * @returns Date | null - Parsed date or null if invalid
- */
+// Helper function to convert date fields from string to Date object
 function convertDateField(value: unknown): Date | null {
   if (value instanceof Date) return value;
   if (typeof value === 'string' && value.trim()) {
@@ -72,11 +62,7 @@ function convertDateField(value: unknown): Date | null {
   return null;
 }
 
-/**
- * Converts positionId to Prisma relation format
- * @param positionId - Position ID (number, null, or undefined)
- * @returns Prisma relation object for position field
- */
+// Helper function to create position relation for Prisma update
 function createPositionRelation(positionId: number | null | undefined) {
   if (positionId === undefined) {
     return undefined; // Don't change the relation
@@ -89,12 +75,7 @@ function createPositionRelation(positionId: number | null | undefined) {
   return { connect: { id: positionId } }; // Set position relation
 }
 
-/**
- * Server Action: Creates a new employee with technologies and position
- * Handles FormData or Record input
- * @param input - FormData or Record with employee data
- * @returns Result object with success/failure status
- */
+// Server Action: Creates a new employee with optional technologies and position
 export async function createEmployee(input: FormData | Record<string, unknown>) {
   try {
     const { data: payload, technologyIds, positionId } = parseFormData(input);
@@ -112,7 +93,6 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
       payload.position_id = positionId;
     }
 
-    // FIX: assogm technologyIds to payload for validation
     if (technologyIds && technologyIds.length > 0) {
       payload.technologyIds = technologyIds;
     }
@@ -142,9 +122,6 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
         busy_to: validData.busy_to,
         status: validData.status,
       };
-
-      // FIX: Set position relation ONLY if we have a valid ID.
-      // Dont use createPositionRelation here, it will return { disconnect: true },
       if (validData.position_id) {
         createData.position = { connect: { id: validData.position_id } };
       }
@@ -189,13 +166,7 @@ export async function createEmployee(input: FormData | Record<string, unknown>) 
   }
 }
 
-/**
- * Server Action: Updates an existing employee
- * Supports partial updates of employee data, technologies, and position
- * @param id - Employee ID (number or string)
- * @param input - FormData or Record with updated data
- * @returns Result object with success/failure status
- */
+// Server Action: Updates an existing employee with optional technologies and position
 export async function updateEmployee(
   id: number | string,
   input: FormData | Record<string, unknown>,
@@ -217,7 +188,6 @@ export async function updateEmployee(
       payload.busy_to = convertDateField(payload.busy_to);
     }
 
-    // FIX: assign technologyIds to payload for validation
     if (technologyIds !== undefined) {
       payload.technologyIds = technologyIds;
     }
@@ -278,7 +248,6 @@ export async function updateEmployee(
       const hasEmployeeUpdates = Object.keys(updateData).length > 0;
 
       if (!hasEmployeeUpdates && !hasTechnologyUpdates) {
-        // Brak zmian to nie błąd, po prostu nic nie robimy
         return;
       }
 
@@ -330,13 +299,7 @@ export async function updateEmployee(
   }
 }
 
-/**
- * Server Action: Updates employee technologies from interactive cell
- * Wrapper around setEmployeeTechnologies with revalidation
- * @param employeeId - Employee ID
- * @param technologyIds - Array of technology IDs
- * @returns Result object with success/failure status
- */
+// Server Action: Updates the technologies associated with an employee
 export async function updateEmployeeTechnologiesAction(
   employeeId: number,
   technologyIds: number[],
