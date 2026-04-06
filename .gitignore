@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# generated pdfs
+/storage
+
 # dependencies
 /node_modules
 /.pnp
@@ -27,6 +30,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.test
 
 # vercel
 .vercel
@@ -37,6 +41,7 @@ next-env.d.ts
 
 # Prisma
 /prisma/generated
+/src/generated/prisma
 
 # Tests (Jest, Playwright)
 /jest-results

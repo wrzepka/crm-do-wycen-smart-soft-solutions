@@ -1,0 +1,804 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict er7jAcTXWfNpxx9WBx502862LfpE4pUCyti2vUaCUAGdll0NTaS4b7JuFSQUMda
+
+-- Dumped from database version 18.1
+-- Dumped by pg_dump version 18.1
+
+-- Started on 2025-12-23 14:22:56
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 899 (class 1247 OID 24783)
+-- Name: EmployeeStatus; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public."EmployeeStatus" AS ENUM (
+    'ACTIVE_AVAILABLE',
+    'ACTIVE_BOOKED',
+    'ON_LEAVE',
+    'TERMINATED',
+    'ONBOARDING'
+);
+
+
+--
+-- TOC entry 902 (class 1247 OID 24794)
+-- Name: Role; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public."Role" AS ENUM (
+    'MANAGER'
+);
+
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 235 (class 1259 OID 24811)
+-- Name: Account; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."Account" (
+    id text NOT NULL,
+    "userId" text NOT NULL,
+    type text NOT NULL,
+    provider text NOT NULL,
+    "providerAccountId" text NOT NULL,
+    refresh_token text,
+    access_token text,
+    expires_at integer,
+    token_type text,
+    scope text,
+    id_token text,
+    session_state text
+);
+
+
+--
+-- TOC entry 236 (class 1259 OID 24823)
+-- Name: Session; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."Session" (
+    id text NOT NULL,
+    "sessionToken" text NOT NULL,
+    "userId" text NOT NULL,
+    expires timestamp(3) without time zone NOT NULL
+);
+
+
+--
+-- TOC entry 237 (class 1259 OID 24834)
+-- Name: VerificationToken; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public."VerificationToken" (
+    identifier text NOT NULL,
+    token text NOT NULL,
+    expires timestamp(3) without time zone NOT NULL
+);
+
+
+--
+-- TOC entry 222 (class 1259 OID 24591)
+-- Name: client_addresses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.client_addresses (
+    id integer NOT NULL,
+    client_id integer NOT NULL,
+    city character varying(100) NOT NULL,
+    postal_code character varying(6) NOT NULL,
+    street character varying(100) NOT NULL,
+    building_number character varying(20) NOT NULL,
+    nip character varying(15) NOT NULL
+);
+
+
+--
+-- TOC entry 221 (class 1259 OID 24590)
+-- Name: client_addresses_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.client_addresses_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 5038 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: client_addresses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.client_addresses_id_seq OWNED BY public.client_addresses.id;
+
+
+--
+-- TOC entry 220 (class 1259 OID 24577)
+-- Name: clients; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.clients (
+    id integer NOT NULL,
+    first_name character varying(100) NOT NULL,
+    last_name character varying(100) NOT NULL,
+    is_lead boolean NOT NULL,
+    email character varying(150) NOT NULL,
+    phone character varying(30)
+);
+
+
+--
+-- TOC entry 219 (class 1259 OID 24576)
+-- Name: clients_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.clients_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 5039 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: clients_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.clients_id_seq OWNED BY public.clients.id;
+
+
+--
+-- TOC entry 233 (class 1259 OID 24695)
+-- Name: employee_technology; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.employee_technology (
+    employee_id integer NOT NULL,
+    technology_id integer NOT NULL
+);
+
+
+--
+-- TOC entry 232 (class 1259 OID 24683)
+-- Name: employees; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.employees (
+    id integer NOT NULL,
+    first_name character varying(100) NOT NULL,
+    last_name character varying(100) NOT NULL,
+    busy_from date,
+    busy_to date,
+    status public."EmployeeStatus" DEFAULT 'ACTIVE_AVAILABLE'::public."EmployeeStatus" NOT NULL,
+    position_id integer,
+    CONSTRAINT busy_range_chk CHECK (((busy_from IS NULL) OR (busy_to IS NULL) OR (busy_from <= busy_to)))
+);
+
+
+--
+-- TOC entry 231 (class 1259 OID 24682)
+-- Name: employees_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.employees_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 5040 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: employees_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.employees_id_seq OWNED BY public.employees.id;
+
+
+--
+-- TOC entry 239 (class 1259 OID 24857)
+-- Name: positions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.positions (
+    id integer NOT NULL,
+    name character varying(100) NOT NULL
+);
+
+
+--
+-- TOC entry 238 (class 1259 OID 24856)
+-- Name: positions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.positions_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 5041 (class 0 OID 0)
+-- Dependencies: 238
+-- Name: positions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.positions_id_seq OWNED BY public.positions.id;
+
+
+--
+-- TOC entry 228 (class 1259 OID 24645)
+-- Name: pricing_history; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pricing_history (
+    id integer NOT NULL,
+    client_id integer NOT NULL,
+    project_id integer NOT NULL,
+    quote_date date DEFAULT CURRENT_DATE NOT NULL,
+    cost numeric(12,2),
+    currency character varying(3) DEFAULT 'PLN'::character varying,
+    status character varying(50) DEFAULT 'draft'::character varying,
+    is_paid boolean DEFAULT false,
+    notes text
+);
+
+
+--
+-- TOC entry 227 (class 1259 OID 24644)
+-- Name: pricing_history_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.pricing_history_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 5042 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: pricing_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.pricing_history_id_seq OWNED BY public.pricing_history.id;
+
+
+--
+-- TOC entry 226 (class 1259 OID 24626)
+-- Name: project_details; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.project_details (
+    id integer NOT NULL,
+    project_id integer NOT NULL,
+    project_name character varying(200),
+    description text,
+    technologies text,
+    estimated_hours numeric(10,2),
+    estimated_price numeric(12,2),
+    status character varying(50) DEFAULT 'new'::character varying,
+    start_date date DEFAULT CURRENT_DATE,
+    end_date date DEFAULT CURRENT_DATE
+);
+
+
+--
+-- TOC entry 225 (class 1259 OID 24625)
+-- Name: project_details_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.project_details_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 5043 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: project_details_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.project_details_id_seq OWNED BY public.project_details.id;
+
+
+--
+-- TOC entry 224 (class 1259 OID 24612)
+-- Name: projects; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.projects (
+    id integer NOT NULL,
+    client_id integer NOT NULL,
+    employee_id integer
+);
+
+
+--
+-- TOC entry 223 (class 1259 OID 24611)
+-- Name: projects_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.projects_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 5044 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
+
+
+--
+-- TOC entry 230 (class 1259 OID 24672)
+-- Name: technologies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.technologies (
+    id integer NOT NULL,
+    name character varying(100) NOT NULL
+);
+
+
+--
+-- TOC entry 229 (class 1259 OID 24671)
+-- Name: technologies_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.technologies_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 5045 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: technologies_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.technologies_id_seq OWNED BY public.technologies.id;
+
+
+--
+-- TOC entry 234 (class 1259 OID 24734)
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id text NOT NULL,
+    email character varying(150) NOT NULL,
+    password_hash text NOT NULL,
+    "emailVerified" timestamp(3) without time zone,
+    image text,
+    role public."Role" DEFAULT 'MANAGER'::public."Role" NOT NULL
+);
+
+
+--
+-- TOC entry 4817 (class 2604 OID 24594)
+-- Name: client_addresses id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_addresses ALTER COLUMN id SET DEFAULT nextval('public.client_addresses_id_seq'::regclass);
+
+
+--
+-- TOC entry 4816 (class 2604 OID 24580)
+-- Name: clients id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.clients ALTER COLUMN id SET DEFAULT nextval('public.clients_id_seq'::regclass);
+
+
+--
+-- TOC entry 4829 (class 2604 OID 24686)
+-- Name: employees id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.employees ALTER COLUMN id SET DEFAULT nextval('public.employees_id_seq'::regclass);
+
+
+--
+-- TOC entry 4832 (class 2604 OID 24860)
+-- Name: positions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.positions ALTER COLUMN id SET DEFAULT nextval('public.positions_id_seq'::regclass);
+
+
+--
+-- TOC entry 4823 (class 2604 OID 24648)
+-- Name: pricing_history id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_history ALTER COLUMN id SET DEFAULT nextval('public.pricing_history_id_seq'::regclass);
+
+
+--
+-- TOC entry 4819 (class 2604 OID 24629)
+-- Name: project_details id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_details ALTER COLUMN id SET DEFAULT nextval('public.project_details_id_seq'::regclass);
+
+
+--
+-- TOC entry 4818 (class 2604 OID 24615)
+-- Name: projects id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.projects_id_seq'::regclass);
+
+
+--
+-- TOC entry 4828 (class 2604 OID 24675)
+-- Name: technologies id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technologies ALTER COLUMN id SET DEFAULT nextval('public.technologies_id_seq'::regclass);
+
+
+--
+-- TOC entry 4864 (class 2606 OID 24822)
+-- Name: Account Account_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Account"
+    ADD CONSTRAINT "Account_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4867 (class 2606 OID 24833)
+-- Name: Session Session_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Session"
+    ADD CONSTRAINT "Session_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4839 (class 2606 OID 24605)
+-- Name: client_addresses client_addresses_client_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_addresses
+    ADD CONSTRAINT client_addresses_client_id_key UNIQUE (client_id);
+
+
+--
+-- TOC entry 4841 (class 2606 OID 24603)
+-- Name: client_addresses client_addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_addresses
+    ADD CONSTRAINT client_addresses_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4835 (class 2606 OID 24589)
+-- Name: clients clients_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.clients
+    ADD CONSTRAINT clients_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 4837 (class 2606 OID 24587)
+-- Name: clients clients_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.clients
+    ADD CONSTRAINT clients_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4857 (class 2606 OID 24701)
+-- Name: employee_technology employee_technology_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.employee_technology
+    ADD CONSTRAINT employee_technology_pkey PRIMARY KEY (employee_id, technology_id);
+
+
+--
+-- TOC entry 4853 (class 2606 OID 24694)
+-- Name: employees employees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.employees
+    ADD CONSTRAINT employees_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4872 (class 2606 OID 24866)
+-- Name: positions positions_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.positions
+    ADD CONSTRAINT positions_name_key UNIQUE (name);
+
+
+--
+-- TOC entry 4874 (class 2606 OID 24864)
+-- Name: positions positions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.positions
+    ADD CONSTRAINT positions_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4847 (class 2606 OID 24660)
+-- Name: pricing_history pricing_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_history
+    ADD CONSTRAINT pricing_history_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4845 (class 2606 OID 24638)
+-- Name: project_details project_details_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_details
+    ADD CONSTRAINT project_details_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4843 (class 2606 OID 24619)
+-- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4849 (class 2606 OID 24681)
+-- Name: technologies technologies_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technologies
+    ADD CONSTRAINT technologies_name_key UNIQUE (name);
+
+
+--
+-- TOC entry 4851 (class 2606 OID 24679)
+-- Name: technologies technologies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.technologies
+    ADD CONSTRAINT technologies_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4860 (class 2606 OID 24746)
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 4862 (class 2606 OID 24803)
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4865 (class 1259 OID 24842)
+-- Name: Account_provider_providerAccountId_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON public."Account" USING btree (provider, "providerAccountId");
+
+
+--
+-- TOC entry 4868 (class 1259 OID 24843)
+-- Name: Session_sessionToken_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "Session_sessionToken_key" ON public."Session" USING btree ("sessionToken");
+
+
+--
+-- TOC entry 4869 (class 1259 OID 24845)
+-- Name: VerificationToken_identifier_token_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON public."VerificationToken" USING btree (identifier, token);
+
+
+--
+-- TOC entry 4870 (class 1259 OID 24844)
+-- Name: VerificationToken_token_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX "VerificationToken_token_key" ON public."VerificationToken" USING btree (token);
+
+
+--
+-- TOC entry 4855 (class 1259 OID 24712)
+-- Name: employee_technology_emp_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX employee_technology_emp_idx ON public.employee_technology USING btree (employee_id);
+
+
+--
+-- TOC entry 4858 (class 1259 OID 24713)
+-- Name: employee_technology_tech_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX employee_technology_tech_idx ON public.employee_technology USING btree (technology_id);
+
+
+--
+-- TOC entry 4854 (class 1259 OID 24872)
+-- Name: idx_employees_position_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_employees_position_id ON public.employees USING btree (position_id);
+
+
+--
+-- TOC entry 4884 (class 2606 OID 24846)
+-- Name: Account Account_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Account"
+    ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4885 (class 2606 OID 24851)
+-- Name: Session Session_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public."Session"
+    ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4882 (class 2606 OID 24702)
+-- Name: employee_technology employee_technology_employee_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.employee_technology
+    ADD CONSTRAINT employee_technology_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4883 (class 2606 OID 24707)
+-- Name: employee_technology employee_technology_technology_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.employee_technology
+    ADD CONSTRAINT employee_technology_technology_id_fkey FOREIGN KEY (technology_id) REFERENCES public.technologies(id) ON DELETE RESTRICT;
+
+
+--
+-- TOC entry 4875 (class 2606 OID 24606)
+-- Name: client_addresses fk_client_address; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.client_addresses
+    ADD CONSTRAINT fk_client_address FOREIGN KEY (client_id) REFERENCES public.clients(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4881 (class 2606 OID 24867)
+-- Name: employees fk_employees_position; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.employees
+    ADD CONSTRAINT fk_employees_position FOREIGN KEY (position_id) REFERENCES public.positions(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4879 (class 2606 OID 24661)
+-- Name: pricing_history fk_history_client; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_history
+    ADD CONSTRAINT fk_history_client FOREIGN KEY (client_id) REFERENCES public.clients(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4880 (class 2606 OID 24666)
+-- Name: pricing_history fk_history_project; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pricing_history
+    ADD CONSTRAINT fk_history_project FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4876 (class 2606 OID 24620)
+-- Name: projects fk_project_client; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT fk_project_client FOREIGN KEY (client_id) REFERENCES public.clients(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4878 (class 2606 OID 24639)
+-- Name: project_details fk_project_details; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_details
+    ADD CONSTRAINT fk_project_details FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4877 (class 2606 OID 24714)
+-- Name: projects fk_project_employee; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT fk_project_employee FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+-- Completed on 2025-12-23 14:22:56
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict er7jAcTXWfNpxx9WBx502862LfpE4pUCyti2vUaCUAGdll0NTaS4b7JuFSQUMda
+
